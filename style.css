@@ -1,0 +1,1612 @@
+/* =========================================
+   全局变量定义 (默认: 棉花糖主题)
+   ========================================= */
+:root {
+    /* 1. 棉花糖主题 (Candy) - 默认 */
+    --body-bg: #ffe6fa;
+    --phone-bg: #ffffff;
+    --phone-border: 8px solid white;
+    --phone-shadow: 0 20px 50px rgba(255, 154, 158, 0.4);
+    --phone-radius: 40px;
+    
+    --header-bg: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+    --header-text: white;
+    --header-shadow: 0 5px 15px rgba(161, 196, 253, 0.3);
+    
+    --screen-bg: #fdfbfb;
+    --text-color: #555;
+    
+    --btn-primary: #FF9A9E;
+    --btn-text: white;
+    
+    --bubble-ai-bg: white;
+    --bubble-ai-text: #555;
+    --bubble-ai-border: 1px solid #f0f0f0;
+    --bubble-ai-radius: 20px 20px 20px 5px;
+    
+    --bubble-user-bg: linear-gradient(to right, #ff9a9e 0%, #fecfef 99%);
+    --bubble-user-text: white;
+    --bubble-user-radius: 20px 20px 5px 20px;
+
+    --input-area-bg: white;
+    --input-bg: #f0f2f5;
+}
+
+/* 2. 磨砂玻璃主题 (Glass) */
+body.theme-glass {
+    --body-bg: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+    --phone-bg: rgba(255, 255, 255, 0.65); /* 半透明 */
+    --phone-border: 1px solid rgba(255, 255, 255, 0.4);
+    --phone-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --phone-radius: 40px;
+    
+    --header-bg: rgba(255,255,255,0.3);
+    --header-text: #333;
+    --header-shadow: none;
+    
+    --screen-bg: transparent; /* 透明以显示毛玻璃 */
+    --text-color: #333;
+    
+    --btn-primary: #333;
+    --btn-text: white;
+    
+    --bubble-ai-bg: rgba(255,255,255,0.8);
+    --bubble-ai-text: #333;
+    --bubble-ai-border: none;
+    --bubble-ai-radius: 18px;
+    
+    --bubble-user-bg: #333;
+    --bubble-user-text: white;
+    --bubble-user-radius: 18px;
+
+    --input-area-bg: rgba(255,255,255,0.5);
+    --input-bg: rgba(255,255,255,0.6);
+}
+
+/* =========================================
+   基础样式 (使用变量)
+   ========================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: "Varela Round", "PingFang SC", sans-serif; }
+
+body {
+    background: var(--body-bg);
+    display: flex; justify-content: center; align-items: center; height: 100vh;
+    transition: background 0.5s; /* 换肤动画 */
+}
+
+.phone-frame {
+    width: 375px; height: 750px;
+    background: var(--phone-bg);
+    border: var(--phone-border);
+    border-radius: var(--phone-radius);
+    box-shadow: var(--phone-shadow);
+    position: relative; overflow: hidden;
+    backdrop-filter: blur(20px); /* 磨砂玻璃的核心 */
+    transition: all 0.5s;
+}
+
+/* 状态栏 */
+.status-bar {
+    height: 30px; display: flex; justify-content: space-between; align-items: center;
+    padding: 0 20px; font-size: 12px; font-weight: bold; color: var(--text-color);
+    position: absolute; top: 0; width: 100%; z-index: 20;
+}
+
+/* 屏幕 */
+.screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--screen-bg);
+    display: none; flex-direction: column; padding-top: 0px;
+    transition: background 0.3s;
+}
+.screen.active { display: flex; }
+
+/* 头部 */
+.header {
+    height: 90px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 15px 15px 15px;
+    background: var(--header-bg);
+    color: var(--header-text);
+    box-shadow: var(--header-shadow);
+    border-radius: 0 0 20px 20px; /* 圆角头部 */
+    z-index: 10;
+    backdrop-filter: blur(5px);
+}
+.back-btn, .menu-btn, .add-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: inherit; }
+
+/* 内容区 */
+.content { flex: 1; overflow-y: auto; color: var(--text-color); }
+.content.padding { padding: 20px; }
+
+/* 按钮与输入 */
+.primary-btn {
+    width: 100%; padding: 12px; background: var(--btn-primary); color: var(--btn-text);
+    border: none; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 10px;
+    transition: transform 0.1s;
+}
+.primary-btn:active { transform: scale(0.98); }
+
+input, textarea, select {
+    width: 100%; padding: 12px; margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.1); border-radius: 12px;
+    background: var(--input-bg); outline: none; color: var(--text-color);
+}
+
+/* 主屏幕图标 */
+.app-grid { display: flex; padding: 40px 20px; gap: 25px; flex-wrap: wrap; }
+.app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; width: 60px; }
+.icon-img {
+    width: 60px; height: 60px; border-radius: 18px; display: flex; justify-content: center; align-items: center;
+    font-size: 28px; color: white; margin-bottom: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.icon-img:active { transform: scale(0.9); }
+.qq-style { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.settings-style { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.theme-style { background: linear-gradient(135deg, #ff9a9e, #fad0c4); } /* 新图标色 */
+.app-icon span { font-size: 12px; color: var(--text-color); font-weight: 500; }
+
+/* 好友列表 */
+.friend-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); cursor: pointer; }
+.friend-avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; object-fit: cover; }
+
+/* 聊天界面 */
+.chat-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+.message { display: flex; align-items: flex-end; max-width: 85%; }
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar { width: 35px; height: 35px; border-radius: 50%; margin: 0 8px; object-fit: cover; background: #ddd; }
+.msg-bubble {
+    padding: 12px 16px; position: relative; word-wrap: break-word; font-size: 14px; line-height: 1.5;
+    transition: all 0.3s;
+}
+
+/* 应用气泡变量 */
+.message.ai .msg-bubble {
+    background: var(--bubble-ai-bg); color: var(--bubble-ai-text);
+    border: var(--bubble-ai-border); border-radius: var(--bubble-ai-radius);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.03);
+}
+.message.user .msg-bubble {
+    background: var(--bubble-user-bg); color: var(--bubble-user-text);
+    border-radius: var(--bubble-user-radius);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+}
+
+
+/* --- 主题商店样式 --- */
+.theme-card {
+    background: rgba(255,255,255,0.5); padding: 15px; border-radius: 20px;
+    margin-bottom: 15px; display: flex; align-items: center; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.2s;
+}
+.theme-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.8); }
+.theme-preview { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.preview-candy { background: linear-gradient(120deg, #a1c4fd, #c2e9fb); }
+.preview-glass { background: linear-gradient(to top, #cfd9df, #e2ebf0); }
+.theme-info h4 { margin-bottom: 5px; color: #333; }
+.theme-info p { font-size: 12px; color: #888; }
+.check-mark { margin-left: auto; color: #4facfe; display: none; }
+/* 选中状态 */
+.theme-card.active { border-color: #4facfe; background: white; }
+.theme-card.active .check-mark { display: block; }
+
+/* --- 移动端适配 --- */
+@media screen and (max-width: 500px) {
+    body { padding: 0; align-items: flex-start; background: var(--screen-bg); }
+    .phone-frame { width: 100%; height: 100%; border: none; border-radius: 0; box-shadow: none; }
+    /* 磨砂主题在手机端特殊处理 */
+    body.theme-glass .phone-frame { background: var(--body-bg); } /* 手机上没背景图，直接用渐变铺满 */
+}
+
+/* --- 其他功能样式 (设置、多选、弹窗等 - 保留原有功能) --- */
+.avatar-upload { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
+.upload-preview { max-width: 100%; max-height: 100px; border-radius: 10px; display: none; }
+.quote-box { background: rgba(0,0,0,0.05); padding: 8px; margin: 0 10px 5px; border-radius: 5px; display: flex; font-size: 12px; }
+.quote-content { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.close-quote-btn { border: none; background: none; cursor: pointer; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+.action-sheet { background: white; width: 96%; border-radius: 15px 15px 0 0; padding: 10px 0; margin-bottom: 10px; animation: slideUp 0.3s; }
+.action-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; color: #333; }
+.action-item.destruct { color: red; }
+@keyframes slideUp { from {transform: translateY(100%);} to {transform: translateY(0);} }
+.message.selecting { opacity: 0.6; cursor: pointer; }
+.message.selected { opacity: 1; }
+.message.selected::after { content: '✔'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #4facfe; font-size: 24px; font-weight: bold; }
+.select-header { background: #333; color: white; position: absolute; top: 0; left: 0; width: 100%; z-index: 50; }
+.edit-box { background: white; width: 80%; padding: 20px; border-radius: 15px; margin: auto; }
+.typing-dots { animation: blink 1.5s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+/* =========================================
+   新版底部 UI (适配双主题)
+   ========================================= */
+
+/* --- 容器布局 --- */
+.chat-footer {
+    position: relative;
+    z-index: 100;
+    transition: all 0.3s;
+}
+
+/* 1. 默认样式 (对应：棉花糖主题 / 方案B) */
+/* 特点：悬浮感、圆角大、糖果色、圆形按钮 */
+
+.chat-footer {
+    background: transparent;
+    padding: 0 10px 10px 10px; /* 留点空隙做悬浮感 */
+}
+
+.input-bar {
+    background: white;
+    padding: 8px 10px;
+    border-radius: 30px; /* 胶囊形状 */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+
+/* 加号开关 */
+.tool-btn-toggle {
+    width: 35px; height: 35px;
+    background: #f0f2f5;
+    border-radius: 50%;
+    border: none;
+    color: #ff9a9e; /* 糖果粉 */
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    transition: transform 0.3s;
+}
+.tool-btn-toggle.open {
+    transform: rotate(45deg);
+    background: #ff9a9e; color: white;
+}
+
+/* 输入框 */
+#message-input {
+    margin-bottom: 0; /* 覆盖全局样式 */
+    border: none;
+    background: #f0f2f5;
+    border-radius: 20px;
+    padding: 10px 15px;
+    height: 40px;
+}
+
+/* 发送按钮组 */
+.action-buttons {
+    display: flex; gap: 8px;
+}
+
+.send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%; /* 圆形 */
+    border: none;
+    color: white;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.1s;
+}
+.send-btn:active { transform: scale(0.9); }
+
+/* 棉花糖主题的按钮色 */
+.user-send { background: linear-gradient(135deg, #ff9a9e, #fad0c4); }
+.ai-trigger { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+
+/* --- 抽屉面板 (棉花糖版) --- */
+.drawer-panel {
+    background: white;
+    margin-top: 10px;
+    border-radius: 20px;
+    overflow: hidden;
+    max-height: 0; /* 默认关闭 */
+    transition: max-height 0.3s ease-in-out, padding 0.3s;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+}
+.drawer-panel.open {
+    max-height: 250px; /* 打开高度 */
+    padding: 20px;
+}
+
+.drawer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.drawer-item {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font-size: 12px; color: #666; cursor: pointer;
+}
+
+.d-icon {
+    width: 50px; height: 50px;
+    background: #f9f9f9;
+    border-radius: 18px; /* 方圆形 */
+    display: flex; justify-content: center; align-items: center;
+    font-size: 24px; color: #ff9a9e;
+    transition: 0.2s;
+}
+.drawer-item:hover .d-icon {
+    background: #ffe6fa; transform: scale(1.05);
+}
+
+/* =========================================================
+   2. 磨砂主题覆写 (对应：极简磨砂主题 / 方案C)
+   当 body 拥有 theme-glass 类时，下面的样式生效
+   ========================================================= */
+
+body.theme-glass .chat-footer {
+    padding: 0; /* 贴底，不要悬浮 */
+    background: rgba(255,255,255,0.6); /* 整体背景 */
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255,255,255,0.3);
+}
+
+body.theme-glass .input-bar {
+    background: transparent; /* 去掉白底 */
+    box-shadow: none;
+    border-radius: 0;
+    padding: 10px 15px;
+}
+
+body.theme-glass .tool-btn-toggle {
+    background: transparent;
+    color: #333;
+    font-size: 20px;
+}
+body.theme-glass .tool-btn-toggle.open {
+    background: transparent; color: #333;
+}
+
+body.theme-glass #message-input {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px; /* 小圆角 */
+}
+
+/* 磨砂版按钮：变成方块或小圆角，颜色更克制 */
+body.theme-glass .send-btn {
+    width: auto; height: 38px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: none;
+}
+
+body.theme-glass .user-send {
+    background: transparent;
+    border: 1px solid #333;
+    color: #333;
+}
+body.theme-glass .ai-trigger {
+    background: #333;
+    color: white;
+}
+/* 为了在磨砂模式下看清图标，稍微改一下按钮内容（可选） */
+/* 这里保持图标不变，风格已经够极简了 */
+
+/* 磨砂版抽屉 */
+body.theme-glass .drawer-panel {
+    background: transparent; /* 透明 */
+    box-shadow: none;
+    margin-top: 0;
+    border-radius: 0;
+}
+body.theme-glass .drawer-panel.open {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+body.theme-glass .d-icon {
+    width: 45px; height: 45px;
+    border-radius: 50%; /* 圆形图标 */
+    background: rgba(0,0,0,0.05);
+    color: #333;
+    font-size: 18px;
+}
+body.theme-glass .drawer-item { color: #333; }
+/* =========================================
+   新增：红包与系统通知样式
+   ========================================= */
+
+/* 1. 红包气泡 (在聊天流中) */
+.bubble-red-packet {
+    background: #fa9e3b; /* 红包橙色 */
+    width: 220px;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.bubble-red-packet:active { transform: scale(0.98); }
+
+/* 红包上半部分 */
+.rp-content {
+    padding: 15px;
+    display: flex; align-items: center; gap: 15px;
+    color: white;
+}
+.rp-icon {
+    font-size: 32px; color: #fbd687; /* 金币色 */
+}
+.rp-info h4 { font-size: 14px; margin-bottom: 2px; }
+.rp-info p { font-size: 12px; opacity: 0.8; }
+
+/* 红包底部条 */
+.rp-footer {
+    background: white;
+    padding: 8px 15px;
+    font-size: 10px; color: #999;
+}
+
+/* 状态：已领取/已退回 (变灰) */
+.bubble-red-packet.disabled {
+    filter: grayscale(1);
+    opacity: 0.8;
+}
+
+/* 2. 系统通知气泡 (居中半透明) */
+.message.system {
+    /* 核心修复：覆盖掉默认的 85% 限制，强制占满整行 */
+    max-width: 100%; 
+    width: 100%;
+    
+    /* 让内部的文字气泡居中 */
+    display: flex;
+    justify-content: center;
+    
+    margin: 15px 0; /* 上下稍微多留点空隙 */
+    cursor: default; /* 鼠标放上去不显示小手，除非在多选模式 */
+}
+.message.system .msg-bubble {
+    background: rgba(0,0,0,0.2);
+    color: white;
+    font-size: 12px;
+    padding: 5px 15px;
+    border-radius: 20px;
+    max-width: fit-content;
+    box-shadow: none;
+    border: none;
+}
+/* 适配磨砂主题 */
+body.theme-glass .message.system .msg-bubble { background: rgba(0,0,0,0.4); }
+
+/* 3. 红包弹窗样式 */
+.packet-modal {
+    background: white; width: 80%; border-radius: 15px; overflow: hidden;
+    animation: zoomIn 0.2s; position: relative;
+}
+.packet-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.packet-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+.money-input {
+    display: flex; align-items: center; border-bottom: 2px solid #fa9e3b; padding-bottom: 5px;
+}
+.money-input span { font-size: 24px; font-weight: bold; margin-right: 10px; }
+.money-input input { border: none; font-size: 24px; background: transparent; padding: 0; margin: 0; }
+.text-input { border: 1px solid #eee; background: #f9f9f9; }
+
+.packet-btn-primary {
+    background: #fa9e3b; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;
+}
+
+/* 拆红包界面 */
+.open-style { text-align: center; background: #f5f5f5; }
+.red-bg {
+    background: #fa9e3b; color: white; padding: 40px 20px 60px 20px;
+    border-radius: 0 0 50% 50% / 0 0 20px 20px; /* 弧形底 */
+}
+.avatar-wrapper img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+.packet-result { padding: 20px; margin-top: -40px; }
+#packet-money-display { font-size: 40px; color: #d48a31; margin-bottom: 20px; }
+.packet-actions { display: flex; gap: 10px; justify-content: center; }
+.action-btn { padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; }
+.action-btn.receive { background: #fa9e3b; color: white; box-shadow: 0 5px 15px rgba(250, 158, 59, 0.4); }
+.action-btn.return { background: white; color: #666; border: 1px solid #ddd; }
+
+@keyframes zoomIn { from{transform: scale(0.8); opacity: 0;} to{transform: scale(1); opacity: 1;} }
+
+/* =========================================
+   多选界面美化包 (覆盖旧样式)
+   ========================================= */
+
+/* 1. 清除旧的丑样式 */
+.message.selecting, .message.selected {
+    opacity: 1 !important; /* 不再简单调整透明度 */
+}
+.message.selected::after {
+    content: none !important; /* 删掉那个错位的大对号 */
+}
+
+/* 2. 进入多选模式时，所有消息的状态 */
+.message.selecting .msg-bubble,
+.message.selecting .msg-avatar,
+.message.selecting .bubble-red-packet,
+.message.selecting.system .msg-bubble {
+    opacity: 0.6;          /* 未选中时变淡 */
+    transform: scale(0.95); /* 稍微缩小，更有“编辑模式”的感觉 */
+    filter: grayscale(0.8); /* 稍微变灰，降低干扰 */
+    cursor: pointer;       /* 鼠标变小手 */
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Q弹的过渡动画 */
+}
+
+/* 3. 【选中】状态的高级设计 */
+.message.selected .msg-bubble,
+.message.selected .bubble-red-packet,
+.message.selected.system .msg-bubble {
+    opacity: 1;            /* 选中后恢复不透明 */
+    transform: scale(1.02); /* 稍微放大，凸显出来 */
+    filter: grayscale(0);   /* 恢复彩色 */
+    box-shadow: 0 0 0 3px #4facfe; /* 给气泡加一圈蓝色高亮边框 */
+    z-index: 5; /* 保证浮在最上面 */
+    position: relative; /* 为了定位对号 */
+}
+
+/* 选中时，头像也恢复正常 */
+.message.selected .msg-avatar {
+    opacity: 1;
+    transform: scale(1);
+    filter: grayscale(0);
+}
+
+/* 4. 精致的对号徽章 (关键设计) */
+.message.selected .msg-bubble::after,
+.message.selected .bubble-red-packet::after,
+.message.selected.system .msg-bubble::after {
+    content: '\f00c'; /* FontAwesome 的对号图标代码 */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    
+    /* 徽章位置与外观 */
+    position: absolute;
+    top: -10px;    /* 稍微浮出气泡右上角 */
+    right: -10px;
+    
+    width: 24px;
+    height: 24px;
+    background: #4facfe; /* 选中色：天蓝色 */
+    color: white;        /* 对号颜色 */
+    border-radius: 50%;  /* 圆形 */
+    border: 2px solid white; /* 加个白边，防撞色 */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2); /* 小投影 */
+    
+    /* 弹出动画 */
+    animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 动画定义：啵的一下弹出来 */
+@keyframes badgePop {
+    0% { transform: scale(0) rotate(-45deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+/* 5. 修复系统消息在多选时的样式 */
+/* 因为系统消息比较特殊，我们需要调整一下它的边框颜色，让它显眼点 */
+.message.selected.system .msg-bubble {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 0 0 5px #4facfe; 
+}
+/* =========================================
+   表情包功能样式
+   ========================================= */
+
+/* 表情面板 (浮在底部) */
+.sticker-panel {
+    position: absolute; bottom: 70px; left: 0; width: 100%;
+    background: white; border-top: 1px solid #eee;
+    padding: 15px; border-radius: 20px 20px 0 0;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+    z-index: 90;
+    animation: slideUpPanel 0.3s;
+}
+@keyframes slideUpPanel { from {transform: translateY(100%);} to {transform: translateY(0);} }
+
+.sticker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; }
+.add-sticker-btn { background: #f0f2f5; border: none; padding: 5px 15px; border-radius: 15px; cursor: pointer; color: #4facfe; }
+
+.sticker-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    max-height: 200px; overflow-y: auto;
+}
+.sticker-item {
+    aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    background: #f9f9f9; cursor: pointer; border: 2px solid transparent;
+}
+.sticker-item img { width: 100%; height: 100%; object-fit: cover; }
+.sticker-item:hover { border-color: #4facfe; }
+
+/* 聊天中的表情包样式 (去气泡化) */
+.bubble-sticker {
+    background: transparent !important; /* 去掉背景色 */
+    padding: 0 !important;             /* 去掉内边距 */
+    border: none !important;           /* 去掉边框 */
+    box-shadow: none !important;       /* 去掉阴影 */
+    overflow: hidden;
+}
+.bubble-sticker img {
+    max-width: 150px; /* 限制最大宽度 */
+    max-height: 150px;
+    border-radius: 10px;
+    display: block;
+}
+
+/* 适配多选模式 */
+.message.selected .bubble-sticker { opacity: 1; transform: scale(1.02); }
+
+/* 补丁：主屏幕单独增加顶部留白，防止图标被状态栏挡住 */
+#screen-home {
+    padding-top: 40px; /* 多加点，稍微离状态栏远一点好看 */
+}
+
+/* =========================================
+   新增主题：📝 手绘笔记 (Paper Sketch)
+   ========================================= */
+body.theme-paper {
+    /* 1. 全局色调重写 */
+    --body-bg: #e6e1d3; /* 桌面背景：米色 */
+    --phone-bg: #fdf6e3; /* 手机背景：亮米色 */
+    --header-bg: #fdf6e3; /* 头部：纸张色 */
+    --header-text: #333; /* 头部文字：铅笔黑 */
+    --header-shadow: 0 2px 0 rgba(0,0,0,0.1); /* 像是画上去的阴影 */
+    
+    --screen-bg: #fdf6e3;
+    
+    /* 2. 气泡变量 (回落样式) */
+    --bubble-ai-bg: #fff;
+    --bubble-ai-text: #333;
+    --bubble-ai-border: 2px solid #333; /* 粗边框 */
+    
+    --bubble-user-bg: #333;
+    --bubble-user-text: #fff;
+    --bubble-user-radius: 20px;
+    
+    /* 按钮与输入框 */
+    --input-bg: #fff;
+}
+
+/* 纸张纹理背景 */
+body.theme-paper .screen, 
+body.theme-paper .phone-frame {
+    background-image: 
+        linear-gradient(#e0dcd0 1px, transparent 1px),
+        linear-gradient(90deg, #e0dcd0 1px, transparent 1px);
+    background-size: 20px 20px; /* 网格纸效果 */
+}
+
+/* 状态栏文字改深色 */
+body.theme-paper .status-bar {
+    color: #555;
+    text-shadow: none;
+}
+
+/* 头部样式：虚线底边 */
+body.theme-paper .header {
+    border-bottom: 2px dashed #999;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* 气泡样式：不规则手绘风 */
+body.theme-paper .message .msg-bubble {
+    border: 2px solid #333;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1); /* 硬阴影，像漫画 */
+}
+
+/* AI 气泡：圆乎乎的不规则形 */
+body.theme-paper .message.ai .msg-bubble {
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    background: #fff;
+}
+
+/* 用户气泡：反向不规则 */
+body.theme-paper .message.user .msg-bubble {
+    border-radius: 15px 255px 15px 225px / 225px 15px 255px 15px;
+    background: #333;
+    color: white;
+    box-shadow: -4px 4px 0 rgba(0,0,0,0.2);
+}
+
+/* 底部输入框手绘化 */
+body.theme-paper .input-bar {
+    border: 2px solid #333;
+    background: #fff;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+    border-radius: 15px;
+}
+body.theme-paper #message-input {
+    background: transparent;
+    border: none;
+}
+body.theme-paper .send-btn {
+    background: #333;
+    color: #fff;
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; /* 像个墨团 */
+    box-shadow: none;
+}
+
+
+/* =========================================
+   新增主题：🧊 3D黏土 (Claymorphism)
+   ========================================= */
+body.theme-clay {
+    /* 1. 全局色调：高级灰白 */
+    --body-bg: #dfe5eb;
+    --phone-bg: #F0F4F8;
+    --header-bg: #F0F4F8;
+    --header-text: #555;
+    --header-shadow: none;
+    
+    --screen-bg: #F0F4F8;
+    
+    /* 气泡：取消默认边框，靠投影 */
+    --bubble-ai-bg: #F0F4F8;
+    --bubble-ai-text: #555;
+    --bubble-ai-border: none;
+    
+    --bubble-user-bg: #6C5CE7; /* 漂亮的紫色 */
+    --bubble-user-text: #fff;
+}
+
+/* 状态栏文字改深色 */
+body.theme-clay .status-bar {
+    color: #666;
+    text-shadow: none;
+}
+
+/* 头部：底部微微凸起 */
+body.theme-clay .header {
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 10px 20px rgba(166, 171, 189, 0.3);
+    z-index: 20;
+}
+
+/* AI 气泡：凸起效果 (Outset Shadow) */
+body.theme-clay .message.ai .msg-bubble {
+    border-radius: 20px;
+    padding: 15px 20px;
+    background: #F0F4F8;
+    /* 经典黏土双重投影：左上白光，右下黑影 */
+    box-shadow: 
+        -6px -6px 14px #ffffff, 
+        6px 6px 14px #c4cdd8;
+}
+
+/* 用户气泡：凹陷效果 (Inset Shadow) 或 哑光材质 */
+body.theme-clay .message.user .msg-bubble {
+    border-radius: 20px;
+    background: #6C5CE7;
+    /* 内部深色投影，增加质感 */
+    box-shadow: 
+        inset 3px 3px 6px #5a4cc2, 
+        inset -3px -3px 6px #7e6cff;
+}
+
+/* 底部输入区域 */
+body.theme-clay .chat-footer {
+    background: #F0F4F8;
+    box-shadow: 0 -10px 30px rgba(255,255,255,0.8); /* 顶部光晕 */
+}
+
+body.theme-clay .input-bar {
+    background: #F0F4F8;
+    /* 凹陷的输入框槽 */
+    box-shadow: 
+        inset 4px 4px 8px #c4cdd8, 
+        inset -4px -4px 8px #ffffff;
+    border-radius: 25px;
+}
+body.theme-clay #message-input {
+    background: transparent;
+}
+
+body.theme-clay .send-btn {
+    background: #6C5CE7;
+    box-shadow: 4px 4px 8px #c4cdd8, -4px -4px 8px #ffffff;
+    color: white;
+}
+body.theme-clay .send-btn:active {
+    box-shadow: inset 2px 2px 5px #5a4cc2; /* 点击后凹下去 */
+}
+
+/* 红包在黏土模式下的特殊适配 */
+body.theme-clay .bubble-red-packet {
+    box-shadow: 
+        6px 6px 14px #c4cdd8, 
+        -6px -6px 14px #ffffff;
+    border: 2px solid #fff;
+}
+
+/* =========================================
+   [Paper] 手绘笔记 - 抽屉与表情面板适配
+   ========================================= */
+
+/* 1. 容器背景：米色网格纸 + 粗虚线顶边 */
+body.theme-paper .drawer-panel,
+body.theme-paper .sticker-panel {
+    background-color: #fdf6e3;
+    background-image: 
+        linear-gradient(#e0dcd0 1px, transparent 1px),
+        linear-gradient(90deg, #e0dcd0 1px, transparent 1px);
+    background-size: 20px 20px;
+    
+    border-top: 3px dashed #333; /* 核心特征：虚线边框 */
+    border-radius: 0; /* 去掉圆角，像撕下来的纸 */
+    box-shadow: 0 -5px 0 rgba(0,0,0,0.05);
+}
+
+/* 2. 功能图标：手绘风格的按钮 */
+body.theme-paper .d-icon {
+    background: #fff;
+    border: 2px solid #333;
+    color: #333;
+    /* 关键：不规则圆角，模拟手画的圈 */
+    border-radius: 40% 60% 70% 30% / 50% 60% 30% 60%;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1); /* 硬阴影 */
+    transition: transform 0.2s;
+}
+
+/* 按下效果 */
+body.theme-paper .drawer-item:active .d-icon {
+    transform: scale(0.95) translate(2px, 2px); /* 按下去会有位移 */
+    box-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+/* 3. 表情包面板的按钮 */
+body.theme-paper .add-sticker-btn {
+    border: 2px solid #333;
+    background: #fff;
+    color: #333;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    font-weight: bold;
+}
+
+/* 表情格子背景 */
+body.theme-paper .sticker-item {
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 5px;
+}
+/* 选中/悬停表情时，边框变黑 */
+body.theme-paper .sticker-item:hover {
+    border-color: #333;
+}
+
+/* =========================================
+   [Clay] 3D黏土 - 抽屉与表情面板适配
+   ========================================= */
+
+/* 1. 容器：与背景融合，顶部微凸 */
+body.theme-clay .drawer-panel,
+body.theme-clay .sticker-panel {
+    background: #F0F4F8; /* 同底色 */
+    border-top: 1px solid rgba(255,255,255,0.5);
+    border-radius: 30px 30px 0 0;
+    /* 顶部的光影，制造层次感 */
+    box-shadow: 
+        0 -10px 20px rgba(255,255,255,0.7),
+        0 5px 15px rgba(166, 171, 189, 0.2); 
+}
+
+/* 2. 功能图标：凸起的软按钮 */
+body.theme-clay .d-icon {
+    background: #F0F4F8;
+    color: #6C5CE7; /* 统一用紫色主题色 */
+    border-radius: 18px; /* 比较圆润的方块 */
+    
+    /* 核心：双重投影（凸起） */
+    box-shadow: 
+        6px 6px 12px #c4cdd8, 
+        -6px -6px 12px #ffffff;
+    
+    transition: all 0.2s ease;
+}
+
+/* 悬停/按下：变成凹陷状态 */
+body.theme-clay .drawer-item:active .d-icon {
+    /* 核心：内部投影（凹陷） */
+    box-shadow: 
+        inset 4px 4px 8px #c4cdd8, 
+        inset -4px -4px 8px #ffffff;
+    transform: scale(0.95);
+    color: #5a4cc2; /* 颜色变深一点 */
+}
+
+/* 3. 表情包面板适配 */
+body.theme-clay .sticker-header {
+    color: #555;
+}
+
+body.theme-clay .add-sticker-btn {
+    background: #F0F4F8;
+    color: #6C5CE7;
+    /* 按钮也是凸起的 */
+    box-shadow: 4px 4px 8px #c4cdd8, -4px -4px 8px #ffffff;
+}
+body.theme-clay .add-sticker-btn:active {
+    box-shadow: inset 2px 2px 5px #c4cdd8, inset -2px -2px 5px #ffffff;
+}
+
+/* 表情格子：平时是凹槽 */
+body.theme-clay .sticker-item {
+    background: #F0F4F8;
+    border-radius: 15px;
+    border: none;
+    /* 默认给一个浅浅的凹槽感 */
+    box-shadow: 
+        inset 3px 3px 6px #dae1e9, 
+        inset -3px -3px 6px #ffffff;
+}
+body.theme-clay .sticker-item:hover {
+    /* 悬停时凸起来？或者加个高亮边框 */
+    border: 2px solid #6C5CE7;
+}
+
+/* =========================================
+   [Glass] 磨砂主题 - 细节增强
+   ========================================= */
+body.theme-glass .drawer-panel,
+body.theme-glass .sticker-panel {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px); /* 强力毛玻璃 */
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+}
+
+body.theme-glass .d-icon {
+    background: rgba(255, 255, 255, 0.5); /* 半透明按钮 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #333;
+}
+
+/* =========================================================================
+   👇 请把这段代码粘贴到 style.css 的【最末尾】 👇
+   这会覆盖掉旧的输入框样式，同时保留抽屉功能不错乱
+   ========================================================================= */
+
+/* --- 0. 基础重置 --- */
+.chat-footer {
+    position: relative;
+    z-index: 100;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.input-bar {
+    display: flex; align-items: center; gap: 10px; transition: all 0.3s;
+}
+#message-input {
+    margin-bottom: 0; height: 40px; flex: 1; border: none; outline: none; transition: all 0.3s;
+}
+.action-buttons {
+    display: flex; gap: 8px; align-items: center;
+}
+/* 按钮基础 */
+.send-btn {
+    width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; border: none; font-size: 16px;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.send-btn:active { transform: scale(0.9); }
+/* 加号基础 */
+.tool-btn-toggle {
+    width: 35px; height: 35px; border: none; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 16px; transition: transform 0.3s;
+}
+.tool-btn-toggle.open { transform: rotate(45deg); }
+
+/* --- 1. 棉花糖主题 (Candy) --- */
+/* 只有当 body 没有其他主题类名时生效，或者我们可以强制覆盖 */
+:root .chat-footer {
+    background: transparent; padding: 0 15px 15px 15px;
+}
+:root .input-bar {
+    background: white; padding: 5px 8px 5px 5px; border-radius: 50px;
+    box-shadow: 0 10px 25px rgba(255, 154, 158, 0.25); border: 2px solid white;
+}
+:root .tool-btn-toggle {
+    background: #fff0f5; border-radius: 50%; color: #ff9a9e;
+}
+:root .tool-btn-toggle.open { background: #ff9a9e; color: white; }
+:root #message-input {
+    background: transparent; padding: 0 10px; color: #666; border: none;
+}
+:root .send-btn { border-radius: 50%; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+:root .user-send { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+:root .ai-trigger { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+
+/* --- 2. 磨砂主题 (Glass) 强力覆盖 --- */
+body.theme-glass .chat-footer {
+    padding: 10px 15px; background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0; box-shadow: none; margin: 0;
+}
+body.theme-glass .input-bar {
+    background: rgba(255, 255, 255, 0.2); border-radius: 12px;
+    padding: 5px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: none;
+}
+body.theme-glass .tool-btn-toggle { background: transparent; color: #333; box-shadow: none; }
+body.theme-glass #message-input { background: transparent; color: #333; border: none; box-shadow: none; }
+body.theme-glass .send-btn {
+    border-radius: 10px; width: 38px; height: 38px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+body.theme-glass .user-send { background: rgba(0, 0, 0, 0.7); color: white; border: none; }
+body.theme-glass .ai-trigger { background: rgba(255, 255, 255, 0.8); color: #333; border: 1px solid rgba(255,255,255,0.5); }
+
+/* --- 3. 手绘主题 (Paper) 强力覆盖 --- */
+body.theme-paper .chat-footer {
+    padding: 10px 20px 20px 20px; background: transparent; border: none; box-shadow: none;
+}
+body.theme-paper .input-bar {
+    background: transparent; border-radius: 0; box-shadow: none; align-items: flex-end; gap: 15px; border: none;
+}
+body.theme-paper .tool-btn-toggle {
+    border: 2px solid #333; background: white; border-radius: 8px; color: #333; box-shadow: none;
+}
+body.theme-paper #message-input {
+    background: transparent; border: none; border-bottom: 2px dashed #555;
+    border-radius: 0; padding: 0 5px; margin-bottom: 5px; box-shadow: none;
+}
+body.theme-paper #message-input:focus { border-bottom-style: solid; }
+body.theme-paper .send-btn {
+    border: 2px solid #333; box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    color: #333; background: white;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+body.theme-paper .user-send:hover { background: #333; color: white; }
+body.theme-paper .ai-trigger { background: #333; color: white; }
+
+/* --- 4. 黏土主题 (Clay) 强力覆盖 --- */
+body.theme-clay .chat-footer {
+    background: #F0F4F8; padding: 15px 20px;
+    border-radius: 30px 30px 0 0;
+    box-shadow: 0 -10px 20px rgba(255,255,255,0.7);
+    border: none;
+}
+body.theme-clay .input-bar {
+    background: transparent; border: none; box-shadow: none; gap: 12px;
+}
+body.theme-clay #message-input {
+    background: #F0F4F8; border-radius: 15px; padding: 0 15px; border: none;
+    box-shadow: inset 4px 4px 8px #c4cdd8, inset -4px -4px 8px #ffffff; color: #555;
+}
+body.theme-clay .tool-btn-toggle {
+    background: #F0F4F8; border-radius: 12px; color: #888;
+    box-shadow: 5px 5px 10px #c4cdd8, -5px -5px 10px #ffffff;
+    border: none;
+}
+body.theme-clay .tool-btn-toggle:active {
+    box-shadow: inset 3px 3px 6px #c4cdd8, inset -3px -3px 6px #ffffff;
+}
+body.theme-clay .send-btn {
+    border-radius: 12px; box-shadow: 5px 5px 10px #c4cdd8, -5px -5px 10px #ffffff;
+    transition: all 0.2s; border: none;
+}
+body.theme-clay .user-send {
+    background: #6C5CE7; color: white;
+    box-shadow: 4px 4px 10px #aeb6c2, -4px -4px 10px #ffffff;
+}
+body.theme-clay .user-send:active {
+    background: #5a4cc2; box-shadow: inset 3px 3px 6px #483d9b;
+}
+body.theme-clay .ai-trigger {
+    background: #F0F4F8; color: #6C5CE7;
+}
+body.theme-clay .ai-trigger:active {
+    box-shadow: inset 3px 3px 6px #c4cdd8, inset -3px -3px 6px #ffffff;
+}
+
+/* --- 好友列表消息预览优化 --- */
+.friend-info {
+    flex: 1; /* 占满剩余空间 */
+    min-width: 0; /* 关键：防止 flex 子元素溢出 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.friend-info p {
+    font-size: 13px; 
+    color: #999; 
+    margin-top: 4px;
+    
+    /* 强制单行 + 省略号 */
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}
+
+/* --- 1. ✨ 磨砂主题 (Glass) 图标适配 --- */
+/* 风格：半透明毛玻璃方块，图标变深色 */
+body.theme-glass .icon-img {
+    background-image: none; /* 清除默认渐变 */
+    background-color: rgba(255, 255, 255, 0.3); /* 半透明背景 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: none; /* 去掉默认阴影 */
+}
+body.theme-glass .icon-img i {
+    color: #333; /* 图标本身变深色，形成对比 */
+}
+
+/* --- 2. 📝 手绘主题 (Paper) 图标适配 --- */
+/* 风格：白底、粗黑边、硬阴影，像画上去的 */
+body.theme-paper .icon-img {
+    background-image: none;
+    background-color: white;
+    border: 3px solid #333; /* 粗黑边框 */
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.15); /* 硬阴影 */
+    /* 使用不规则圆角，和聊天气泡保持统一风格 */
+    border-radius: 30% 70% 20% 40% / 50% 30% 70% 50%; 
+    transition: all 0.2s;
+}
+body.theme-paper .icon-img i {
+    color: #333;
+}
+/* 按下时，阴影变小，有按下去的感觉 */
+body.theme-paper .icon-img:active {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+}
+
+
+/* --- 3. 🧊 3D黏土主题 (Clay) 图标适配 --- */
+/* 风格：凸起的软糯按钮，图标用主题色点缀 */
+body.theme-clay .icon-img {
+    background-image: none;
+    background-color: #F0F4F8; /* 和背景同色 */
+    border-radius: 22px; /* 更圆润的方块 */
+    /* 核心：双重投影，制造凸起感 */
+    box-shadow: -6px -6px 12px #ffffff, 
+                 6px 6px 12px #c4cdd8;
+    transition: all 0.2s ease;
+}
+body.theme-clay .icon-img i {
+    color: #6C5CE7; /* 使用主题的紫色作为图标颜色 */
+    /* 给图标也加一点点阴影，更有质感 */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+/* 按下时，投影反转，变成凹陷 */
+body.theme-clay .icon-img:active {
+    box-shadow: inset 4px 4px 8px #c4cdd8, 
+                inset -4px -4px 8px #ffffff;
+    transform: scale(0.95);
+}
+/* =========================================================================
+   新增：QQ动态 (朋友圈) 功能样式
+   ========================================================================= */
+
+/* --- 1. 底部导航栏 --- */
+.bottom-nav {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    background: var(--input-area-bg, #fff);
+    border-top: 1px solid rgba(0,0,0,0.1);
+    display: flex;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+}
+.nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.nav-btn i {
+    font-size: 20px;
+}
+.nav-btn.active {
+    color: var(--btn-primary, #FF9A9E);
+}
+
+/* --- 2. 动态 Feed 流 --- */
+#qzone-feed-container {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    background: #f0f2f5; /* 类似QQ空间的灰色背景 */
+}
+.moment-post {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+}
+.moment-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.moment-header img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.moment-header-info h4 {
+    font-size: 14px;
+    color: #555;
+}
+.moment-header-info p {
+    font-size: 12px;
+    color: #aaa;
+}
+.moment-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap; /* 保留AI生成的换行 */
+    margin-bottom: 10px;
+}
+.moment-image {
+    width: 150px;
+    height: 150px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* --- 3. 选择好友界面 --- */
+.friend-item-selectable {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+.friend-item-selectable input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-left: auto; /* 把复选框推到最右边 */
+}
+.confirm-moment-footer {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #eee;
+}
+
+/* --- 4. 动态图片详情弹窗 --- */
+.moment-image-modal {
+    background: white;
+    width: 90%;
+    max-width: 350px;
+    margin: auto;
+    border-radius: 15px;
+    overflow: hidden;
+    animation: zoomIn 0.3s;
+}
+.moment-image-placeholder {
+    height: 200px;
+    background: #e9ecef;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #adb5bd;
+}
+.moment-image-placeholder i { font-size: 40px; margin-bottom: 10px; }
+.moment-image-desc {
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #495057;
+    max-height: 250px;
+    overflow-y: auto;
+}
+/* =========================================================================
+   新增：动态点赞与评论功能样式
+   ========================================================================= */
+
+/* --- 1. 动态底部的操作栏 --- */
+.moment-actions {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end; /* 按钮靠右 */
+    gap: 20px;
+}
+.action-btn-moment {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.action-btn-moment.liked {
+    color: #e74c3c; /* 点赞后的红色 */
+    font-weight: bold;
+}
+
+/* --- 2. 评论区 --- */
+.moment-comments-section {
+    margin-top: 10px;
+    background: #f7f7f7;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+.comment {
+    font-size: 13px;
+    padding: 5px 0;
+    line-height: 1.5;
+}
+/* 不是最后一条评论，就加个底部分割线 */
+.comment:not(:last-child) {
+    border-bottom: 1px dashed #e0e0e0;
+}
+.comment-author {
+    font-weight: bold;
+    color: #555;
+    margin-right: 5px;
+}
+
+/* --- 3. 评论输入表单 --- */
+.comment-form {
+    display: flex;
+    margin-top: 10px;
+    gap: 5px;
+}
+.comment-input {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 5px 12px;
+    font-size: 13px;
+    outline: none;
+}
+.comment-submit-btn {
+    padding: 5px 15px;
+    border: none;
+    background: var(--btn-primary, #FF9A9E);
+    color: white;
+    border-radius: 15px;
+    cursor: pointer;
+}
+
+/* === 新增：用户发布动态界面样式 === */
+#modal-user-post {
+    z-index: 200; /* 保证它盖在所有界面上面 */
+    background: var(--body-bg); /* 跟随主题 */
+}
+
+/* 好友选择列表项 */
+.visibility-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.visibility-item img {
+    width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;
+}
+.visibility-item h4 {
+    flex: 1; font-size: 14px; color: #333;
+}
+.visibility-item input[type="checkbox"] {
+    width: 20px; height: 20px; margin: 0;
+}
+
+/* 适配暗色/磨砂主题 */
+body.theme-glass .visibility-item {
+    background: rgba(255,255,255,0.4);
+}
+body.theme-clay .visibility-item {
+    background: #F0F4F8;
+    box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #fff;
+}
+
+/* === 新增：互动频率与开关样式 === */
+
+/* 1. iOS 风格滑动开关 */
+.toggle-switch {
+    position: relative; display: inline-block; width: 50px; height: 30px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc; transition: .4s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: "";
+    height: 26px; width: 26px; left: 2px; bottom: 2px;
+    background-color: white; transition: .4s; border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+input:checked + .slider { background-color: #4facfe; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* 2. 分段式按钮组 (频率控制) */
+.interaction-frequency {
+    background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.interaction-frequency h4 { margin-bottom: 15px; color: #555; }
+
+.segmented-control {
+    display: flex; background: #f0f2f5; padding: 4px; border-radius: 12px; gap: 5px;
+}
+.option-btn {
+    flex: 1; border: none; background: transparent; padding: 8px 0;
+    border-radius: 8px; font-size: 12px; color: #888; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: all 0.2s;
+}
+.option-btn i { font-size: 16px; margin-bottom: 2px; }
+
+/* 选中状态 */
+.option-btn.active {
+    background: white; color: #a18cd1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-weight: bold;
+}
+
+.option-description {
+    font-size: 12px; color: #999; margin-top: 10px; background: #f9f9f9;
+    padding: 10px; border-radius: 8px; line-height: 1.5;
+}
+
+/* === 新增：删除功能相关样式 === */
+
+/* 1. 动态卡片右上角的“更多”按钮 */
+.moment-more-btn {
+    position: absolute;
+    top: 15px; right: 15px; /* 定位在右上角 */
+    background: none; border: none;
+    color: #ccc; font-size: 18px;
+    padding: 5px 10px; cursor: pointer;
+    z-index: 5;
+}
+.moment-more-btn:hover { color: #666; background: #f0f2f5; border-radius: 5px; }
+
+/* 2. 确认弹窗样式 */
+.confirm-box {
+    background: white; width: 80%; max-width: 320px;
+    padding: 25px; border-radius: 15px;
+    text-align: center; margin: auto;
+    animation: zoomIn 0.2s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.confirm-box h3 { margin-bottom: 10px; color: #333; }
+.confirm-box p { margin-bottom: 25px; color: #666; font-size: 14px; }
+
+.confirm-buttons { display: flex; gap: 15px; }
+.confirm-buttons button {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    font-size: 14px; cursor: pointer; font-weight: bold;
+}
+.btn-cancel { background: #f0f2f5; color: #333; }
+.btn-confirm.destruct { background: #ff4757; color: white; }
+
+/* 3. 评论区样式优化 (为了支持长按反馈) */
+.comment {
+    transition: background 0.2s;
+    border-radius: 4px;
+    user-select: none; /* 防止长按选中文字，而是触发菜单 */
+    -webkit-user-select: none;
+}
+.comment:active { background-color: #e6e6e6; } /* 按下时变灰 */
+
+/* 4. 操作菜单样式微调 */
+.action-item.danger { color: #ff4757; }
+.action-item i { width: 25px; text-align: center; }
+
+/* === 召唤好友列表样式 === */
+.summon-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+}
+.summon-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.summon-item:active { background: #f9f9f9; }
+.summon-item img {
+    width: 40px; height: 40px; border-radius: 50%; margin-right: 15px;
+}
+.summon-item h4 {
+    font-size: 15px; color: #333; flex: 1;
+}
+.summon-item i {
+    color: #ccc;
+}
+
+/* =========================================
+   完美适配版：聊天时间显示样式
+   (宽气泡 + 绝对定位时间 + 无闪烁)
+   ========================================= */
+
+/* 1. 消息行容器 */
+.message {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 15px;
+    width: 100%;
+    /* 恢复正常的两侧微小间距，不再大面积挤压 */
+    padding: 0 0px; 
+}
+
+/* 2. AI 消息布局 */
+.message.ai {
+    justify-content: flex-start; /* 靠左对齐 */
+    /* 关键：只在【右边】留出 45px 给时间，左边完全利用 */
+    padding-right: 0px; 
+}
+
+/* 3. 用户 消息布局 */
+.message.user {
+    flex-direction: row-reverse; /* 反向排列：头像在右 */
+    justify-content: flex-start; /* 实际上是靠右对齐 */
+    /* 关键：只在【左边】留出 45px 给时间，右边完全利用 */
+    padding-left: 0px; 
+}
+
+/* 4. 气泡本体设置 */
+.msg-bubble,
+.bubble-red-packet,
+.bubble-sticker {
+    position: relative; /* 作为时间的定位锚点 */
+    z-index: 1;
+    /* 核心恢复：最大宽度设为 80% 或更高，恢复宽气泡体验 */
+    max-width: 82%; 
+}
+
+/* 5. 绝对定位时间文本 */
+.msg-time {
+    position: absolute;
+    bottom: 2px;
+    font-size: 11px;
+    color: #bbb;
+    white-space: nowrap;
+    user-select: none;
+    z-index: 2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* 6. AI 时间位置：气泡右侧 */
+.message.ai .msg-time {
+    left: 100%;
+    margin-left: 6px; /* 紧贴气泡右边 */
+}
+
+/* 7. 用户 时间位置：气泡左侧 */
+.message.user .msg-time {
+    right: 100%;
+    margin-right: 6px; /* 紧贴气泡左边 */
+}
+
+/* 8. 适配不同主题颜色 (保持不变) */
+body.theme-glass .msg-time { color: #555; font-weight: bold; text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
+body.theme-clay .msg-time { color: #888; }
+body.theme-paper .msg-time { color: #555; font-family: 'Courier New', serif; font-weight: bold; }
