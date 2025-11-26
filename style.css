@@ -1610,3 +1610,109 @@ input:checked + .slider:before { transform: translateX(20px); }
 body.theme-glass .msg-time { color: #555; font-weight: bold; text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
 body.theme-clay .msg-time { color: #888; }
 body.theme-paper .msg-time { color: #555; font-family: 'Courier New', serif; font-weight: bold; }
+
+/* =========================================
+   新增：顶部通知栏样式
+   ========================================= */
+#notification-area {
+    position: absolute;
+    top: 40px; /* 在状态栏下方 */
+    left: 0;
+    width: 100%;
+    padding: 0 10px;
+    z-index: 999; /* 保证在最顶层 */
+    pointer-events: none; /* 让鼠标能穿透空白区域 */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-banner {
+    pointer-events: auto; /* 弹窗本体可以点击 */
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    cursor: pointer;
+    
+    /* 进场动画 */
+    animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.2s;
+}
+
+.notification-banner:active {
+    transform: scale(0.98);
+}
+
+.notif-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.notif-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.notif-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+}
+
+.notif-time {
+    font-size: 10px;
+    color: #999;
+    font-weight: normal;
+}
+
+.notif-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 进场动画关键帧 */
+@keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- 主题适配 --- */
+
+/* 1. 磨砂主题 (Glass) */
+body.theme-glass .notification-banner {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* 2. 手绘主题 (Paper) */
+body.theme-paper .notification-banner {
+    background: #fff;
+    border: 2px solid #333;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* 不规则手绘感 */
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+}
+body.theme-paper .notif-avatar {
+    border: 2px solid #333;
+}
+
+/* 3. 黏土主题 (Clay) */
+body.theme-clay .notification-banner {
+    background: #F0F4F8;
+    border-radius: 18px;
+    /* 凸起效果 */
+    box-shadow: 5px 5px 10px #c4cdd8, -5px -5px 10px #ffffff;
+}

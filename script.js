@@ -2166,6 +2166,7 @@ setInterval(async () => {
 
 
 // === AI 决策引擎 ===
+// === (修改版) AI 决策引擎 ===
 async function processCharacterDecision(friend) {
     // 1. 获取活跃等级，计算基础概率
     const level = friend.activityLevel || 'standard';
@@ -2173,37 +2174,46 @@ async function processCharacterDecision(friend) {
 
     let actionChance = 0;
     // 设定概率 (每30秒触发一次的概率)
-    if (level === 'active') actionChance = 0.3;     // 30% 概率行动 (非常高)
-    if (level === 'standard') actionChance = 0.05;  // 5% 概率 (比较正常)
-    if (level === 'quiet') actionChance = 0.01;     // 1% 概率 (很低)
+    if (level === 'active') actionChance = 0.4;     // 提高到 40% 概率行动
+    if (level === 'standard') actionChance = 0.1;   // 提高到 10% 概率
+    if (level === 'quiet') actionChance = 0.02;     // 2% 概率
 
-    // 掷骰子
-    if (Math.random() > actionChance) return; // 没选中，pass
+    // 掷骰子：如果没选中，就什么都不做
+    if (Math.random() > actionChance) return; 
+
+    console.log(`💡 ${friend.name} 决定开始行动...`);
 
     // === 决定行动内容 ===
-    // 优先处理朋友圈回复，如果没有朋友圈要回，再考虑主动聊天
-
-
-    // A. 检查有没有未互动的用户动态
+    
+    // A. 优先检查：有没有需要回复的用户动态？(保持原逻辑)
     const recentUserPost = momentsData.find(m => 
         m.author === 'user' && 
         m.visibleTo.includes(friend.id) && 
-        // 关键修改 1: 检查是否已评论
         !m.comments.some(c => c.name === friend.name) && 
-        // 关键修改 2: 检查是否已点赞 (如果点赞过也不用再处理了，防止为了发评论反复触发)
         (!m.likedBy || !m.likedBy.includes(friend.name)) &&
-        // 关键修改 3: 检查是否被标记为“已忽略”(针对上面函数末尾的逻辑)
         (!m.ignoredBy || !m.ignoredBy.includes(friend.id)) &&
-        (Date.now() - m.timestamp < 24 * 60 * 60 * 1000) // 24小时内的动态
+        (Date.now() - m.timestamp < 24 * 60 * 60 * 1000)
     );
 
     if (recentUserPost) {
-        console.log(`💡 ${friend.name} 决定回复你的动态`);
+        console.log(`   -> 决定回复你的动态`);
         await triggerAutoReplyMoment(friend, recentUserPost);
+        return; // 回复完就结束，不做其他事
+    }
+
+    // B. 如果没事可做，随机决定：是【发新动态】还是【找你聊天】？
+    // 50% 概率发动态，50% 概率找你聊天
+    const randomChoice = Math.random();
+
+    if (randomChoice < 0.5) {
+        // --- 新增功能：主动发朋友圈 ---
+        console.log(`   -> 决定发布一条新动态`);
+        await triggerAutoMoment(friend);
     } else {
-        // B. 主动发起聊天 (仅限 active 和 standard)
+        // --- 原有功能：主动私聊 ---
+        // (仅限活跃和标准模式，高冷模式不主动私聊)
         if (level !== 'quiet') {
-             console.log(`💡 ${friend.name} 决定主动找你聊天`);
+             console.log(`   -> 决定主动找你聊天`);
              await triggerAutoChat(friend);
         }
     }
@@ -2315,6 +2325,16 @@ async function triggerAutoReplyMoment(friend, moment) {
         // 7. 保存并刷新
         if (hasUpdate) {
             await saveData();
+
+             // 如果 AI 评论了
+            if (action.comment && action.comment.trim() !== "") {
+                pushNotification(friend.name, `评论了你: ${action.comment}`, friend.avatar, 'moment', null);
+            }
+            // 如果 AI 仅仅是点赞了 (且没评论)，也可以通知
+            else if (action.like === true) {
+                pushNotification(friend.name, `赞了你的动态`, friend.avatar, 'moment', null);
+            }
+            
             console.log("💾 [调试] 数据已保存");
             
             const friendsScreen = document.getElementById('screen-friends');
@@ -2336,46 +2356,79 @@ async function triggerAutoReplyMoment(friend, moment) {
     }
 }
 
-// === 行为实现：主动发起聊天 ===
+// === (修复版) 行为实现：主动发起聊天 ===
 async function triggerAutoChat(friend) {
-    // 简单检查：如果最后一条消息是AI发的，就不连续发了，免得烦人
-    const history = chatHistory[friend.id] || [];
-    if (history.length > 0 && history[history.length - 1].role === 'assistant') return;
+    console.log(`🚀 [调试] ${friend.name} 开始尝试发送主动消息...`);
+
+    // 1. 检查 API Key
+    if (!apiConfig.key) {
+        console.error("❌ [调试] 失败：没有 API Key");
+        return;
+    }
 
     try {
+        // 2. 构造提示词 (Prompt)
         const systemPrompt = `你现在是 ${friend.name}，人设：${friend.prompt}。
-        你已经有一段时间没和用户说话了。请根据你们的关系，主动发起一个话题。
-        可以是分享你的日常，或者问候用户。
-        直接输出你要说的话，不要带引号。`;
+        你决定主动给用户发一条消息。
+        可以是分享刚才发生的趣事，或者是问候用户，或者是继续之前的话题。
+        【要求】：
+        1. 直接输出你要说的话，不要带引号，不要带动作描写（除非在括号里）。
+        2. 简短一点，像朋友聊微信一样。`;
 
+        // 3. 发送请求
         const response = await fetch(`${apiConfig.url}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
             body: JSON.stringify({
                 model: apiConfig.model,
-                messages: [{ role: "system", content: systemPrompt }]
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: "请发一条消息。" }
+                ]
             })
         });
+
+        // 4. 检查网络错误
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`API 请求失败: ${response.status} - ${errText}`);
+        }
 
         const result = await response.json();
         const text = result.choices[0].message.content;
 
-        // 保存消息
-        if (!chatHistory[friend.id]) chatHistory[friend.id] = [];
-        chatHistory[friend.id].push({ role: 'assistant', content: text });
-        saveData();
+        console.log(`✅ [调试] ${friend.name} 生成了内容: ${text}`);
 
-        // 只有当前不在和这个人聊天时，才弹窗提示或者加红点
-        // 这里简单处理：刷新好友列表以显示最新消息预览
+        // 5. 保存消息到数据库
+        if (!chatHistory[friend.id]) chatHistory[friend.id] = [];
+        
+        chatHistory[friend.id].push({ 
+            role: 'assistant', 
+            content: text,
+            timestamp: Date.now() // 加上时间戳
+        });
+        
+        await saveData(); // 等待保存完成
+
+        if (currentChatId !== friend.id || !document.getElementById('screen-chat').classList.contains('active')) {
+            pushNotification(friend.name, text, friend.avatar, 'chat', friend.id);
+        }
+
+        // 6. 刷新界面 UI
+        // 刷新好友列表 (为了显示红点/最新消息预览)
         renderFriendList(); 
         
-        // 如果恰好在这个人的聊天界面，直接上屏
+        // 如果你正好开着和这个人的聊天窗口，直接把气泡画出来，并滚到底部
         if (currentChatId === friend.id && document.getElementById('screen-chat').classList.contains('active')) {
             renderChatHistory();
             scrollToBottom();
         }
 
-    } catch(e) { console.error("主动聊天失败", e); }
+    } catch(e) { 
+        console.error("❌ [调试] 主动聊天出错:", e);
+        // 如果你想看到报错弹窗，可以把下面这行注释取消掉：
+        // alert(`${friend.name} 想找你聊天，但失败了：\n${e.message}`);
+    }
 }
 
 // ==========================================
@@ -2697,4 +2750,125 @@ async function executeSummon(targetFriend) {
         console.error("召唤失败", e);
         alert("召唤失败，AI 好像开小差了...");
     }
+}
+
+// ==========================================
+//   (最终修复版) AI 主动发布朋友圈的核心逻辑
+// ==========================================
+async function triggerAutoMoment(friend) {
+    if (!apiConfig.key) return;
+
+    try {
+        // 1. 构造提示词
+        const systemPrompt = `你现在是 ${friend.name}，人设：${friend.prompt}。
+        【当前任务】：请分享你的生活、心情或吐槽，发一条“朋友圈”动态。
+        【要求】：
+        1. 必须返回纯 JSON 格式。
+        2. 格式：{"text": "正文内容", "img_desc": "对配图的画面描述"}
+        3. 内容要符合人设，简短自然，不要太长。`;
+
+        // 2. 请求 AI
+        const response = await fetch(`${apiConfig.url}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
+            body: JSON.stringify({
+                model: apiConfig.model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: "请直接输出JSON，不要废话。" }
+                ]
+            })
+        });
+
+        // 3. 解析结果
+        const result = await response.json();
+        const rawContent = result.choices[0].message.content;
+        const jsonMatch = rawContent.match(/{[\s\S]*}/); 
+
+        if (jsonMatch) {
+            const data = JSON.parse(jsonMatch[0]);
+            
+            // 4. 创建新动态对象
+            const newMoment = {
+                id: Date.now(),
+                author: 'ai',
+                friendId: friend.id,
+                timestamp: Date.now(),
+                text: data.text,
+                imageDescription: data.img_desc || "无配图",
+                imagePlaceholderUrl: `https://picsum.photos/seed/${Date.now()}/200`,
+                isLiked: false,
+                comments: []
+            };
+
+            // 5. 保存
+            momentsData.unshift(newMoment); 
+            await saveData();
+
+            // === ⬇️ 这里是修复的地方，逻辑合并了 ⬇️ ===
+            const feedContainer = document.getElementById('qzone-feed-container');
+            
+            // 判断：如果正好在看动态页，就刷新；如果没在看，就弹窗通知
+            if (feedContainer.style.display !== 'none') {
+                renderMomentsFeed();
+            } else {
+                pushNotification(friend.name, "发布了一条新动态", friend.avatar, 'moment', null);
+            }
+            // === ⬆️ 修复结束 ⬆️ ===
+            
+            console.log(`✅ ${friend.name} 的动态发布成功！`);
+        }
+
+    } catch (e) {
+        console.error("AI 自动发动态失败:", e);
+    }
+}
+
+// ==========================================
+//   (新增) 通知栏系统核心
+// ==========================================
+function pushNotification(title, content, avatar, type, targetId) {
+    const area = document.getElementById('notification-area');
+    
+    // 创建弹窗元素
+    const div = document.createElement('div');
+    div.className = 'notification-banner';
+    
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    
+    div.innerHTML = `
+        <img src="${avatar}" class="notif-avatar">
+        <div class="notif-content">
+            <div class="notif-title">
+                <span>${title}</span>
+                <span class="notif-time">${timeStr}</span>
+            </div>
+            <div class="notif-text">${content}</div>
+        </div>
+    `;
+
+    // 点击事件：根据类型跳转
+    div.onclick = () => {
+        div.remove(); // 点击后立刻消失
+        if (type === 'chat') {
+            openChat(targetId); // 跳转聊天
+        } else if (type === 'moment') {
+            goToScreen('screen-friends'); // 先去好友页
+            switchQqTab('moments'); // 切换到动态 Tab
+        }
+    };
+
+    // 添加到页面
+    area.appendChild(div);
+
+    // 播放系统提示音 (可选，这里用震动模拟，如果有的话)
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    // 4秒后自动消失
+    setTimeout(() => {
+        div.style.opacity = '0';
+        div.style.transform = 'translateY(-20px)';
+        setTimeout(() => div.remove(), 300); // 等动画播完再删
+    }, 4000);
 }
