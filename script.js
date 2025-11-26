@@ -2872,3 +2872,27 @@ function pushNotification(title, content, avatar, type, targetId) {
         setTimeout(() => div.remove(), 300); // 等动画播完再删
     }, 4000);
 }
+
+// ==========================================
+//   (新增) 手动唤醒/强制心跳功能
+// ==========================================
+async function forceHeartbeat() {
+    if (!isWorldActive) {
+        alert("虚拟世界已暂停，请先打开“允许角色自由活动”开关。");
+        return;
+    }
+    if (!apiConfig.key) {
+        alert("请先设置 API Key！");
+        return;
+    }
+
+    alert("正在唤醒所有角色，请稍候...");
+    console.log("🫀 手动强制心跳: 检查所有角色...");
+
+    // 遍历所有好友，强制让他们进行一次“行动检定”
+    for (const friend of friendsData) {
+        await processCharacterDecision(friend);
+    }
+
+    alert("所有角色都检查完毕！\n如果有人想找你，你很快会收到通知或消息。");
+}

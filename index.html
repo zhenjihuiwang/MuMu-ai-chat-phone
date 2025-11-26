@@ -14,7 +14,7 @@
 
     <div class="phone-frame">
         <div id="notification-area"></div>
-        
+
         <!-- 状态栏 (已添加ID) -->
         <div class="status-bar">
             <span id="status-time">00:00</span>
@@ -92,6 +92,20 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+
+                <!-- ↓↓↓ 新增：手动唤醒按钮 ↓↓↓ -->
+                <div class="setting-item" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong style="display:block; color:#333;">手动唤醒世界</strong>
+                            <small style="color:#999;">如果感觉AI睡着了，点这里强制检查一次</small>
+                        </div>
+                        <button class="primary-btn" onclick="forceHeartbeat()" style="width: auto; padding: 8px 20px; margin-top: 0; background: #a18cd1;">
+                            <i class="fas fa-magic"></i> 戳一下
+                        </button>
+                    </div>
+                </div>
+                
 <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #ccc;">
 
                 <!-- === 新增：数据备份与恢复区域 === -->
