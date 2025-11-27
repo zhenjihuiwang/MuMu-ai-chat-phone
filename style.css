@@ -1925,52 +1925,119 @@ body.theme-clay .notification-banner {
 .record-info h4 { color: #eee; font-size: 13px; margin-bottom: 3px; font-weight: bold; }
 .record-info p { color: #888; font-size: 11px; margin: 0; }
 
+/* ==============================================
+   (美化版) 视频通话回顾弹窗 (黑金回响版)
+   ============================================== */
 
-/* 2. 回顾弹窗：剧本模式 */
+/* 1. 回顾弹窗：剧本模式 (整体容器) */
 #modal-video-history .modal-content {
-    /* 黑金主题 */
+    /* 黑金主题 (保持) */
     background: #0a0a0a; 
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow: 0 0 40px rgba(0,0,0,0.8);
     color: #ddd;
-    width: 90%; height: 70%;
-    display: flex; flex-direction: column;
+
+    /* 1. 核心：圆角与辉光效果 */
+    border-radius: 20px; /* 大圆角，现代感 */
+    border: 1px solid rgba(212, 175, 55, 0.25); /* 边框颜色稍微提亮一点 */
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.2); /* 金色辉光阴影 */
+    
+    /* 尺寸与布局 */
+    width: 90%; 
+    height: 75%; /* 高度稍微增加，比例更好看 */
+    display: flex; 
+    flex-direction: column;
+    padding: 20px; /* 增加内边距，让内容不要贴边 */
+    
+    /* 动画效果 */
+    animation: zoomIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow: hidden; /* 防止内部元素溢出圆角 */
 }
 
+/* 2. 头部区域 */
 #modal-video-history .history-header {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 15px; margin-bottom: 10px;
-    display: flex; justify-content: space-between; align-items: center;
-}
-#modal-video-history h3 { color: #D4AF37; font-size: 16px; letter-spacing: 1px; }
+    /* 去掉内边距和外边距，由父容器统一控制 */
+    padding: 0; 
+    margin: 0;
+    margin-bottom: 15px; /* 只保留和下方内容的间距 */
+    
+    /* 边框线更柔和 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px; /* 让线和文字有距离 */
 
-/* 剧本列表 */
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    flex-shrink: 0; /* 防止头部被压缩 */
+}
+#modal-video-history h3 { 
+    color: #D4AF37; 
+    font-size: 16px; 
+    letter-spacing: 1px; 
+}
+
+/* 3. (核心修改) 关闭按钮 */
+#modal-video-history .close-btn {
+    /* 基础设置 */
+    background: rgba(255, 255, 255, 0.05); /* 半透明背景，更有层次感 */
+    border: none;
+    color: #D4AF37;
+    cursor: pointer;
+    
+    /* 尺寸与形状 */
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; /* 变成圆形 */
+    
+    /* 居中图标 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    
+    /* 交互效果 */
+    transition: all 0.2s;
+}
+
+#modal-video-history .close-btn:hover {
+    background: rgba(212, 175, 55, 0.2); /* 悬停时发出金光 */
+    transform: rotate(90deg); /* 增加一点旋转特效 */
+}
+
+#modal-video-history .close-btn:active {
+    transform: scale(0.9) rotate(90deg); /* 点击时缩小 */
+}
+
+
+/* 4. 剧本列表 */
 .script-list {
-    flex: 1; overflow-y: auto; 
-    display: flex; flex-direction: column; gap: 15px; 
+    flex: 1; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
     padding: 10px 5px;
+    /* 新增：平滑的遮罩，让文字不会生硬地被截断 */
+    mask-image: linear-gradient(to bottom, transparent, black 15px, black calc(100% - 15px), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 15px, black calc(100% - 15px), transparent);
 }
 .script-item { font-size: 13px; line-height: 1.6; }
 
-/* 旁白样式 */
+/* 旁白与对话样式 (保持不变) */
 .script-item.narration {
     color: #888; 
-    border-left: 2px solid #D4AF37; /* 左侧金线 */
+    border-left: 2px solid #D4AF37;
     padding-left: 10px; 
     font-size: 12px;
 }
-
-/* 对话样式 */
 .script-item.dialogue {
     color: #fff; 
     background: rgba(255,255,255,0.05);
     padding: 8px 12px;
     border-radius: 8px;
-    margin-left: 12px; /* 缩进一点 */
+    margin-left: 12px;
 }
 .script-role { color: #D4AF37; font-weight: bold; font-size: 12px; margin-right: 5px; }
 
-/* 滚动条美化 */
+/* 滚动条美化 (保持不变) */
 .script-list::-webkit-scrollbar { width: 4px; }
 .script-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
@@ -2001,4 +2068,116 @@ body.theme-clay .notification-banner {
     background: #0a0a0a; 
     border: 1px solid rgba(212, 175, 55, 0.3);
     box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+/* ==============================================
+   新增：AI 主动来电呼叫界面样式
+   ============================================== */
+
+#screen-incoming-call {
+    background: #111;
+    color: white;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    text-align: center;
+    z-index: 500; /* 保证在最顶层 */
+    padding: 60px 20px;
+}
+
+/* 显式指定：当它被激活时，必须是 flex 布局 */
+#screen-incoming-call.active {
+    display: flex !important; /* 加个 !important 强制生效 */
+}
+
+/* 毛玻璃背景 (用伪元素实现) */
+.incoming-call-bg {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(20px) brightness(0.6);
+    transform: scale(1.1);
+    z-index: -1;
+}
+
+.caller-info {
+    animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } }
+
+.caller-avatar {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    /* 呼吸光晕效果 */
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,255,255,0.2), 0 10px 30px rgba(0,0,0,0.4); }
+    50% { box-shadow: 0 0 35px rgba(255,255,255,0.5), 0 10px 30px rgba(0,0,0,0.4); }
+}
+
+#caller-name {
+    margin-top: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+#caller-status {
+    font-size: 14px;
+    color: #ccc;
+    margin-top: 5px;
+}
+
+#caller-reason {
+    font-size: 16px;
+    color: #fff;
+    margin-top: 25px;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.call-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.action-btn-call-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #ddd;
+}
+
+.call-btn {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    border: none;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+.call-btn:active {
+    transform: scale(0.9);
+}
+
+.call-btn.decline {
+    background-color: #ff3b30; /* 苹果红 */
+}
+.call-btn.accept {
+    background-color: #34c759; /* 苹果绿 */
 }

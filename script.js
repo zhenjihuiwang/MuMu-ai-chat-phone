@@ -10,6 +10,7 @@ let stickerLibrary = []; // 存储所有表情包对象 {id, src, desc}
 let momentsData = []; // 存储所有动态
 let isWorldActive = true; // 默认世界是运转的
 let currentVideoLog = []; // 暂存当前视频通话的剧本
+let videoCallStartTime = null;
 
 // === 新增工具：将时间戳转为 HH:mm ===
 function formatMsgTime(timestamp) {
@@ -523,7 +524,11 @@ async function triggerAIResponse(isReaction = false) {
 
     // --- 3. 构建 Prompt ---
     let systemPrompt = `你现在扮演：${friend.name}。设定：${friend.prompt}。
-    用户：${friend.userName}。
+    用户：${friend.userName}。【当前现实时间】：${timeString}(请拥有时间观念...)
+    【特殊技能：主动视频通话】
+    当你认为只靠文字无法表达情感时 (例如：用户伤心需要安慰，或你发现了趣事想立刻分享)，你可以决定发起视频通话。
+    请在对话中直接输出指令：###VIDEO_CALL_INITIATE:你想打电话的原因###
+    示例: ###VIDEO_CALL_INITIATE:看你心情不好，想打电话陪陪你。###
     【核心规则】像真人一样说话，多用分段符号 ### 来控制气泡节奏。
     【表情包】可用关键词：[ ${stickerListText} ]。如果是表情，请单独输出指令：###STICKER_SEND:关键词###
     `;
@@ -667,6 +672,22 @@ function startTypeWriter(avatarUrl) {
         // --- 指令拦截区 (红包、表情包等) ---
         if (aiBuffer.startsWith("{{GET}}")) { aiBuffer = aiBuffer.replace("{{GET}}", ""); handleAiAction('{{GET}}'); typeNext(); return; }
         if (aiBuffer.startsWith("{{RETURN}}")) { aiBuffer = aiBuffer.replace("{{RETURN}}", ""); handleAiAction('{{RETURN}}'); typeNext(); return; }
+         if (aiBuffer.substring(typeIndex).startsWith("###VIDEO_CALL_INITIATE:")) {
+            const endIdx = aiBuffer.indexOf("###", typeIndex + 24);
+            if (endIdx !== -1) {
+                const reason = aiBuffer.substring(typeIndex + 24, endIdx).trim();
+                
+                // 停止打字，移除临时气泡
+                isStreamActive = false; 
+                if (currentBubbleDOM && currentBubbleDOM.parentElement) {
+                    currentBubbleDOM.parentElement.remove();
+                }
+                
+                // 触发来电界面！
+                showIncomingCallScreen(reason);
+                return; // 中断后续所有操作
+            }
+        }
         if (aiBuffer.substring(typeIndex).startsWith("###STICKER_SEND:")) {
             const endIdx = aiBuffer.indexOf("###", typeIndex + 16);
             if (endIdx !== -1) {
@@ -2939,9 +2960,8 @@ function enterVideoCall() {
     document.getElementById('video-chat-box').innerHTML = '';
     initStars();
     
-    // --- 新增：清空剧本记录 ---
-    currentVideoLog = []; 
-    // ------------------------
+    videoCallStartTime = Date.now(); //记录通话开始时间
+    currentVideoLog = []; // --- 清空剧本记录 ---
 
     // 自动开场
     addVideoMessage('narration', '信号连接成功...');
@@ -2951,6 +2971,7 @@ function enterVideoCall() {
 // 2. 退出视频通话
 // 修改后的退出函数：修复刷新问题
 function exitVideoCall() {
+     videoCallStartTime = null; //清空通话开始时间 
     // 1. 先判断有没有聊天记录需要保存
     if (currentVideoLog.length > 0) {
         const logData = {
@@ -3017,10 +3038,9 @@ function sendVideoMessage() {
     
 }
 
-// ==========================================
-//   核心升级：电影感旁白 & 连续剧本模式
-// ==========================================
-
+// ==============================================================
+//   (最终时间感知版) 视频通话 AI 核心
+// ==============================================================
 async function triggerVideoAI(isInit = false) {
     if (!apiConfig.key) { alert("请先设置API Key"); return; }
     
@@ -3028,46 +3048,52 @@ async function triggerVideoAI(isInit = false) {
     const loadingDiv = addVideoMessage('narration', '正在渲染画面...');
 
     try {
-        // --- A. 构造剧本指令 (Director's Cut) ---
-        // 关键修改：极大地丰富了对 ###ACT: 的描写要求
+        // --- A. (核心新增) 计算时间与通话时长 ---
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { hour12: false, timeStyle: 'short' }); // 例如 "凌晨2:15"
+        
+        let durationContext = "";
+        if (videoCallStartTime) {
+            const durationInMinutes = Math.floor((Date.now() - videoCallStartTime) / (1000 * 60));
+            if (durationInMinutes > 0) {
+                durationContext = `你们已经通话了 ${durationInMinutes} 分钟。`;
+            }
+        }
+        
+        // --- B. 构造包含时间感知的剧本指令 ---
         const systemPrompt = `你现在正在和用户进行【视频通话】。
         你扮演：${friend.name}。人设：${friend.prompt}。
         
+        【通话状态】：
+        当前现实时间是：${timeString}。
+        ${durationContext}
+        (请基于当前时间和通话时长，做出符合逻辑的反应。例如，深夜时关心对方，长时间通话后表达开心或疲惫。)
+        
         【核心指令】：
         请像写剧本一样回复，输出【多条】连续的内容。
-        请严格遵守以下格式，每一行只写一个动作或一句话：
+        请严格遵守以下格式，每一行只写一个动作或一句话：可以连续生成多行动作或多行对话。
         
         格式说明：
-        ###ACT: 旁白描写
-        ###SAY: 语音对话
+        ###ACT: 旁白描写 (要有电影镜头感，描写光影、微表情、氛围等)
+        ###SAY: 语音对话 (口语化、自然)
         
-        【旁白描写要求 (重要)】：
-        1. 不要只写动作，要有**电影镜头感**和**文学感**。
-        2. 细致描写：光影变化、风吹发丝、微表情、眼神流转、背景环境氛围等。
-        3. 字数不限，可以写得唯美、细腻、有氛围感。
-        
-        示例：
-        ###ACT: 屏幕里的光线暗了下来，窗外的晚风轻轻吹起他的刘海，他微微低下头，耳根泛起一丝红晕。
-        ###SAY: 那个... 其实我一直在等你电话。
-        ###ACT: 猛地抬起头，眼神里闪烁着路灯倒映的微光，显得有些慌乱。
-        ###SAY: 我是说... 刚好没睡。
-        
-        【语音对话要求】：
-        口语化，自然，符合人设。`;
+        示例 (深夜长时间通话)：
+        ###ACT: 他看着屏幕里的你，眼神里流露出一丝心疼，声音也变得格外轻柔。
+        ###SAY: 都${timeString}了，还不睡吗？
+        ###ACT: 他打了个哈欠，但嘴角却忍不住微微上扬。
+        ###SAY: 不过... 跟你聊了这么久，真开心。`;
 
         let messages = [
             { role: "system", content: systemPrompt }
         ];
 
-        // --- B. 注入记忆：文字聊天记录 ---
+        // --- C. 注入记忆 (代码不变) ---
         const recentHistory = (chatHistory[currentChatId] || []).slice(-3);
         recentHistory.forEach(msg => {
             if(!msg.content.includes('###')) {
                 messages.push({ role: msg.role, content: msg.content });
             }
         });
-
-        // --- C. 注入记忆：屏幕上的气泡 ---
         const screenBubbles = document.querySelectorAll('#video-chat-box .v-msg');
         screenBubbles.forEach(div => {
             const text = div.innerText.trim();
@@ -3079,7 +3105,7 @@ async function triggerVideoAI(isInit = false) {
             }
         });
 
-        // --- D. 触发逻辑 ---
+        // --- D. 触发逻辑 (代码不变) ---
         if (isInit) {
              messages.push({ role: "user", content: "（视频通话已接通，请你先开口打招呼）" });
         } else {
@@ -3089,30 +3115,28 @@ async function triggerVideoAI(isInit = false) {
             }
         }
 
-        // --- E. 发送请求 ---
+        // --- E. 发送请求 (代码不变) ---
         const response = await fetch(`${apiConfig.url}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
             body: JSON.stringify({
                 model: apiConfig.model,
                 messages: messages,
-                temperature: 0.85 // 温度再高一点，让描写更富有创造力
+                temperature: 0.85 
             })
         });
 
         const data = await response.json();
         const rawContent = data.choices[0].message.content;
 
-        // --- F. 解析剧本并播放 ---
+        // --- F. 解析剧本并播放 (代码不变) ---
         loadingDiv.remove();
-
         const lines = rawContent.split('\n');
         const queue = [];
 
         lines.forEach(line => {
             line = line.trim();
             if (!line) return;
-
             if (line.startsWith('###ACT:')) {
                 queue.push({ type: 'narration', text: line.replace('###ACT:', '').trim() });
             } 
@@ -3124,11 +3148,10 @@ async function triggerVideoAI(isInit = false) {
                 if(cleanText) queue.push({ type: 'ai', text: cleanText });
             }
         });
-
         playVideoQueue(queue, 0);
 
     } catch (e) {
-        if(loadingDiv) loadingDiv.innerText = "信号中断...";
+        if(loadingDiv) loadingDiv.innerHTML = `<span style="color:#ff4757">信号中断: ${e.message}</span>`;
         console.error(e);
     }
 }
@@ -3221,4 +3244,67 @@ function openVideoHistoryModal(msgIndex) {
 // 关闭剧本回顾
 function closeVideoHistoryModal() {
     document.getElementById('modal-video-history').style.display = 'none';
+}
+
+// ==============================================
+//   新增：AI 主动来电处理逻辑
+// ==============================================
+
+/**
+ * 显示来电呼叫屏幕
+ * @param {string} reason - AI 想要打电话的原因
+ */
+function showIncomingCallScreen(reason) {
+    const friend = friendsData.find(f => f.id === currentChatId);
+    if (!friend) return;
+
+    // 填充来电信息
+    document.getElementById('caller-avatar').src = friend.avatar;
+    document.getElementById('caller-name').innerText = friend.name;
+    document.querySelector('.incoming-call-bg').style.backgroundImage = `url('${friend.avatar}')`;
+    // 如果AI没给原因，就用默认的
+    document.getElementById('caller-reason').innerText = `“${reason || '想听听你的声音...'}”`;
+
+    // 切换到呼叫屏幕
+    goToScreen('screen-incoming-call');
+
+    // 可以在这里加一个来电铃声 (可选)
+    // const ringtone = new Audio('path/to/ringtone.mp3');
+    // ringtone.play();
+}
+
+/**
+ * 用户点击“接听”按钮
+ */
+function acceptCall() {
+    // 直接进入已有的视频通话界面
+    enterVideoCall(); 
+}
+
+/**
+ * 用户点击“拒接”按钮
+ */
+function declineCall() {
+    // 1. 隐藏来电界面，返回聊天
+    goToScreen('screen-chat');
+
+    // 2. (关键) 向聊天记录中插入一条系统消息，告知AI它的通话被拒绝了
+    const systemMsg = {
+        role: 'system',
+        content: '###SYSTEM:你发起的视频通话被用户挂断了。###',
+        timestamp: Date.now()
+    };
+
+    if (!chatHistory[currentChatId]) {
+        chatHistory[currentChatId] = [];
+    }
+    chatHistory[currentChatId].push(systemMsg);
+    
+    saveData();
+    renderChatHistory();
+
+    // 3. (可选但推荐) 立刻触发AI回应，让它对“被挂断”这件事做出反应
+    setTimeout(() => {
+        triggerAIResponse(true); // isReaction=true 告诉AI这是对事件的反应
+    }, 500);
 }

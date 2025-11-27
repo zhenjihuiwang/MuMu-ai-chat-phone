@@ -103,6 +103,9 @@
                         <button class="primary-btn" onclick="forceHeartbeat()" style="width: auto; padding: 8px 20px; margin-top: 0; background: #a18cd1;">
                             <i class="fas fa-magic"></i> 戳一下
                         </button>
+                        <button class="primary-btn" onclick="showIncomingCallScreen('测试：我想见你')" style="background: #ff3b30; margin-top: 10px;">
+                            <i class="fas fa-phone"></i> 强制测试来电
+                        </button>
                     </div>
                 </div>
                 
@@ -733,5 +736,33 @@
     </div>
 </div>
 
+<!-- ▼▼▼ 请将这段代码粘贴到 index.html 的 </body> 标签之前 ▼▼▼ -->
+
+<!-- ==============================================
+   新增：AI 主动来电呼叫界面
+   ============================================== -->
+<div id="screen-incoming-call" class="screen">
+    <div class="incoming-call-bg"></div>
+    <div class="caller-info">
+        <img id="caller-avatar" src="" class="caller-avatar">
+        <h2 id="caller-name">角色名</h2>
+        <p id="caller-status">正在邀请你进行视频通话...</p>
+        <p id="caller-reason">“我想打电话给你...”</p>
+    </div>
+    <div class="call-actions">
+        <div class="action-btn-call-wrapper">
+            <button class="call-btn decline" onclick="declineCall()">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <span>拒接</span>
+        </div>
+        <div class="action-btn-call-wrapper">
+            <button class="call-btn accept" onclick="acceptCall()">
+                <i class="fas fa-video"></i>
+            </button>
+            <span>接听</span>
+        </div>
+    </div>
+</div>
 </body>
 </html>
