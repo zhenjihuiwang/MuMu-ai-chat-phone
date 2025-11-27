@@ -36,9 +36,9 @@
                     <div class="icon-img qq-style"><i class="fab fa-qq"></i></div>
                     <span>QQ</span>
                 </div>
-                <div class="app-icon" onclick="goToScreen('screen-settings')">
-                    <div class="icon-img settings-style"><i class="fas fa-cog"></i></div>
-                    <span>API设置</span>
+                <div class="app-icon" onclick="goToScreen('screen-settings-menu')">
+                    <div class="icon-img settings-style"><i class="fas fa-tools"></i></div>
+                    <span>系统设置</span>
                 </div>
                 <div class="app-icon" onclick="goToScreen('screen-themes')">
                     <div class="icon-img theme-style"><i class="fas fa-tshirt"></i></div>
@@ -47,10 +47,91 @@
             </div>
         </div>
 
+        <!-- === 新增：系统设置主菜单 === -->
+<div id="screen-settings-menu" class="screen">
+    <div class="header">
+        <button class="back-btn" onclick="goToScreen('screen-home')"><i class="fas fa-chevron-left"></i></button>
+        <h3>系统设置</h3>
+    </div>
+    <div class="content padding">
+        <div class="setting-menu-list">
+            <!-- 跳转到原有的 API 设置页 -->
+            <div class="menu-item" onclick="goToScreen('screen-settings')">
+                <div class="menu-icon" style="background: #a18cd1;"><i class="fas fa-network-wired"></i></div>
+                <div class="menu-text">
+                    <h4>API 连接设置</h4>
+                    <p>配置模型地址与密钥</p>
+                </div>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+
+            <!-- 跳转到新的 声音设置页 -->
+            <div class="menu-item" onclick="goToScreen('screen-settings-sound')">
+                <div class="menu-icon" style="background: #ff9a9e;"><i class="fas fa-music"></i></div>
+                <div class="menu-text">
+                    <h4>声音与振动</h4>
+                    <p>通知音、气泡音、铃声</p>
+                </div>
+                <i class="fas fa-chevron-right arrow"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- === 新增：声音设置界面 === -->
+<div id="screen-settings-sound" class="screen">
+    <div class="header">
+        <button class="back-btn" onclick="goToScreen('screen-settings-menu')"><i class="fas fa-chevron-left"></i></button>
+        <h3>声音设置</h3>
+    </div>
+    <div class="content padding scrollable">
+        
+        <!-- 1. 通知提示音 -->
+        <div class="setting-section">
+            <h4>🔔 通知提示音</h4>
+            <select id="sound-select-notif" onchange="previewSound('notif')">
+                <option value="default">默认：清脆叮咚</option>
+                <option value="soft">柔和：水滴声</option>
+                <option value="custom">📂 自定义上传...</option>
+            </select>
+            <!-- 隐藏的上传控件 -->
+            <input type="file" id="file-notif" accept="audio/*" style="display:none" onchange="handleSoundUpload('notif', this)">
+            <p id="custom-name-notif" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
+        </div>
+
+        <!-- 2. 聊天气泡音 -->
+        <div class="setting-section">
+            <h4>💬 聊天气泡音</h4>
+            <select id="sound-select-chat" onchange="previewSound('chat')">
+                <option value="default">默认：气泡波</option>
+                <option value="typewriter">机械：打字机</option>
+                <option value="custom">📂 自定义上传...</option>
+            </select>
+            <input type="file" id="file-chat" accept="audio/*" style="display:none" onchange="handleSoundUpload('chat', this)">
+            <p id="custom-name-chat" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
+        </div>
+
+        <!-- 3. 来电铃声 -->
+        <div class="setting-section">
+            <h4>📞 视频/电话铃声</h4>
+            <select id="sound-select-ring" onchange="previewSound('ring')">
+                <option value="default">默认：电子铃声</option>
+                <option value="classic">复古：旧电话</option>
+                <option value="custom">📂 自定义上传...</option>
+            </select>
+            <input type="file" id="file-ring" accept="audio/*" style="display:none" onchange="handleSoundUpload('ring', this)">
+            <p id="custom-name-ring" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
+        </div>
+
+        <hr>
+        <button class="primary-btn" onclick="saveSoundSettings()">💾 保存声音设置</button>
+    </div>
+</div>
+
         <!-- 2. API 设置界面 -->
         <div id="screen-settings" class="screen">
             <div class="header">
-                <button class="back-btn" onclick="goToScreen('screen-home')"><i class="fas fa-chevron-left"></i></button>
+                <button class="back-btn" onclick="goToScreen('screen-settings-menu')"><i class="fas fa-chevron-left"></i></button>
                 <h3>API与数据</h3>
             </div>
             <div class="content padding">

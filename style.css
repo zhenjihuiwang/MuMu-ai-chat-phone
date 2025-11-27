@@ -2181,3 +2181,71 @@ body.theme-clay .notification-banner {
 .call-btn.accept {
     background-color: #34c759; /* 苹果绿 */
 }
+
+/* === 新增：设置菜单样式 === */
+.setting-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.menu-item {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: transform 0.1s;
+}
+.menu-item:active { transform: scale(0.98); }
+
+.menu-icon {
+    width: 45px; height: 45px;
+    border-radius: 12px;
+    display: flex; justify-content: center; align-items: center;
+    color: white; font-size: 20px;
+}
+
+.menu-text { flex: 1; }
+.menu-text h4 { margin-bottom: 3px; color: #333; font-size: 16px; }
+.menu-text p { font-size: 12px; color: #999; }
+
+.menu-item .arrow { color: #ccc; }
+
+/* 适配暗色/透明主题 */
+body.theme-glass .menu-item { background: rgba(255,255,255,0.4); }
+body.theme-paper .menu-item { border: 2px solid #333; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); border-radius: 10px; }
+/* 强制覆盖：通知栏样式修正 */
+#notification-area {
+    position: absolute;
+    top: 50px; /* 避开刘海/状态栏 */
+    left: 0;
+    width: 100%;
+    padding: 0 10px;
+    z-index: 9999 !important; /* 强制最高层级 */
+    pointer-events: none; /* 让鼠标能穿透空白区域 */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-banner {
+    pointer-events: auto; /* 弹窗本体可以点击 */
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.1);
+    animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 适配暗色模式 */
+body.theme-glass .notification-banner { background: rgba(255,255,255,0.8); }

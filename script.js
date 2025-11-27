@@ -81,6 +81,7 @@ window.onload = async function() {
 
     // 正常加载流程
     await loadData();
+    await loadSoundSettings(); // 加载声音配置
     renderFriendList();
     
     // 启动状态栏更新
@@ -492,86 +493,62 @@ function sendUserMessage() {
     
     saveData();
     renderChatHistory(); 
+    playSystemSound('chat'); // 播放气泡音
     input.value = '';
 }
 
 // ==========================================
-//   AI 对话核心 (修复版：增强报错与防卡死)
+//   (最终修复版) 触发 AI 回复 (包含手动/自动)
+//   解决：失忆问题 + 退出界面无弹窗问题
 // ==========================================
 async function triggerAIResponse(isReaction = false) {
     if (!apiConfig.key) { alert("请先在首页设置API Key!"); return; }
 
     const friend = friendsData.find(f => f.id === currentChatId);
-    let history = chatHistory[currentChatId] || [];
+    
+    // 1. 获取全局记忆 (时间、动态、历史)
+    const globalMemory = getGlobalContext(currentChatId);
 
-    // --- 1. 准备表情包清单 ---
+    // 2. 准备表情包清单
     let stickerListText = (stickerLibrary && stickerLibrary.length > 0) 
         ? stickerLibrary.map(s => `"${s.desc}"`).join(', ') 
         : "(暂无可用表情包)";
 
-    // --- 2. 检查是否有“待领取”的红包 ---
-    let pendingPacket = null;
-    for (let i = history.length - 1; i >= 0; i--) {
-        const msg = history[i];
-        if (msg.role === 'user' && msg.content.includes('###RED_PACKET:')) {
-            try {
-                const json = JSON.parse(msg.content.replace('###RED_PACKET:', '').replace('###', ''));
-                if (json.status === 'pending') pendingPacket = json;
-            } catch(e) {}
-            break;
-        }
-    }
-
-    // --- 3. 构建 Prompt ---
+    // 3. 构造 System Prompt
     let systemPrompt = `你现在扮演：${friend.name}。设定：${friend.prompt}。
-    用户：${friend.userName}。【当前现实时间】：${timeString}(请拥有时间观念...)
-    【特殊技能：主动视频通话】
-    当你认为只靠文字无法表达情感时 (例如：用户伤心需要安慰，或你发现了趣事想立刻分享)，你可以决定发起视频通话。
-    请在对话中直接输出指令：###VIDEO_CALL_INITIATE:你想打电话的原因###
-    示例: ###VIDEO_CALL_INITIATE:看你心情不好，想打电话陪陪你。###
+    用户：${friend.userName}。
+    
+    ${globalMemory}
+    
     【核心规则】像真人一样说话，多用分段符号 ### 来控制气泡节奏。
     【表情包】可用关键词：[ ${stickerListText} ]。如果是表情，请单独输出指令：###STICKER_SEND:关键词###
     `;
 
-    if (pendingPacket) {
-        systemPrompt += `
-        【用户发了红包：¥${pendingPacket.amount}，寄语："${pendingPacket.text}"】
-        请立刻决定：
-        领取回复格式: {{GET}}###(感谢语)
-        退回回复格式: {{RETURN}}###(拒绝语)
-        `;
+    // 4. 准备消息列表 (只保留 System 和最新的 User 指令，因为历史记录已经在 GlobalMemory 里了，节省 token 且更精准)
+    // 但为了保险，还是保留最近 2 条对话作为上下文缓冲
+    const recentMsgs = (chatHistory[currentChatId] || []).slice(-2).map(msg => ({
+        role: msg.role, 
+        content: msg.content.replace(/###.*?###/g, '') // 简化历史
+    }));
+
+    let finalMessages = [{ role: "system", content: systemPrompt }, ...recentMsgs];
+
+    // 如果是红包或反应模式，追加特定指令
+    if (isReaction) finalMessages.push({ role: "user", content: "(请根据刚才的情况做出反应)" });
+
+    // 5. 界面反馈：显示正在输入
+    // 只有当用户还在界面时才显示
+    if (document.getElementById('screen-chat').classList.contains('active')) {
+        createAiBubble(friend.avatar, "typing...");
     }
 
-    // --- 4. 净化历史记录 ---
-    let cleanHistory = history.map(msg => {
-        let content = msg.content;
-        if (content.includes('###STICKER:')) content = "(表情包图片)";
-        if (content.includes('###RED_PACKET:')) content = "(红包消息)";
-        if (content.includes('###SYSTEM:')) content = content.replace('###SYSTEM:', '(系统提示: ');
-        return { role: msg.role, content: content };
-    });
-
-    let finalMessages = [{ role: "system", content: systemPrompt }, ...cleanHistory];
-    
-    if (pendingPacket) finalMessages.push({ role: "user", content: "(请立刻根据红包做出反应)" });
-    else if (isReaction) finalMessages.push({ role: "user", content: "(请根据刚才的消息做出反应)" });
-
-    // --- 5. 准备UI ---
-    aiBuffer = ""; typeIndex = 0; isStreamActive = true; 
-    createAiBubble(friend.avatar, "typing...");
-    startTypeWriter(friend.avatar); 
-
-    // 处理 URL 结尾斜杠问题
+    // 处理 API URL
     let cleanUrl = apiConfig.url.trim().replace(/\/$/, '');
-    // 如果用户忘了写 /v1，根据情况自动补全（可选，防止小白填错）
-    if (!cleanUrl.endsWith('/v1') && cleanUrl.indexOf('openai') > -1) {
-        cleanUrl += '/v1';
-    }
+    if (!cleanUrl.endsWith('/v1') && cleanUrl.indexOf('openai') > -1) cleanUrl += '/v1';
 
     try {
-        // 设置 30秒 超时，防止无限等待
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 40000); // 40秒超时
 
         const response = await fetch(`${cleanUrl}/chat/completions`, {
             method: 'POST',
@@ -587,16 +564,17 @@ async function triggerAIResponse(isReaction = false) {
             signal: controller.signal
         });
         
-        clearTimeout(timeoutId); // 清除超时计时器
+        clearTimeout(timeoutId);
 
-        // 核心修复：如果状态码不对，直接抛出错误文本
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`API错误 (${response.status}): ${errText}`);
+            throw new Error(`API错误: ${errText}`);
         }
 
+        // --- 6. 接收流式数据 ---
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
+        let fullText = ""; // 用来积攒完整的回复
 
         while (true) {
             const { done, value } = await reader.read();
@@ -610,28 +588,73 @@ async function triggerAIResponse(isReaction = false) {
                     try {
                         const data = JSON.parse(dataStr);
                         const content = data.choices[0].delta.content;
-                        if (content) aiBuffer += content;
+                        if (content) fullText += content;
                     } catch (e) {}
                 }
             }
         }
-    } catch (e) {
-        // 发生错误时：
-        console.error("请求失败", e);
-        // 1. 停止打字机流
-        isStreamActive = false; 
-        // 2. 在气泡里直接显示错误信息，方便你看
-        if(currentBubbleDOM) {
-            currentBubbleDOM.style.color = "red";
-            currentBubbleDOM.innerText = "出错了: " + e.message;
-            // 如果是超时，提示检查网络
-            if (e.name === 'AbortError') {
-                currentBubbleDOM.innerText = "连接超时！请检查网络或更换 API 地址。";
-            }
+
+        // --- 7. (核心修改点) 回复接收完毕，判断用户去哪了 ---
+        
+        // 移除界面上的 "typing..." 气泡 (如果存在)
+        const typingBubble = document.querySelector('.typing-dots');
+        if (typingBubble && typingBubble.parentElement.parentElement) {
+            typingBubble.parentElement.parentElement.remove();
         }
-        alert("AI 没反应：" + e.message);
-    } finally {
-        isStreamActive = false;
+
+        // 再次检查：用户还在当前聊天窗口吗？
+        const isUserStillWatching = (currentChatId === friend.id) && document.getElementById('screen-chat').classList.contains('active');
+
+        if (isUserStillWatching) {
+            // [A] 用户还在看：启动打字机效果，播放气泡音
+            // 这里我们需要把 fullText 传给打字机，或者直接为了简单，直接上屏
+            // 为了避免复杂的流式冲突，既然我们已经拿到了 fullText，直接模拟打字机比较稳
+            aiBuffer = fullText; 
+            typeIndex = 0; 
+            isStreamActive = false; // 标记流已结束
+            
+            // 重新创建一个空的AI气泡用于打字
+            createAiBubble(friend.avatar, ""); 
+            startTypeWriter(friend.avatar); // 启动打字机逻辑
+            
+            // 播放气泡音 (如果你加了声音系统)
+            if (typeof playSystemSound === "function") playSystemSound('chat');
+
+        } else {
+            // [B] 用户跑了：直接入库，弹窗通知，播放通知音
+            console.log("用户已离开界面，转为后台通知模式");
+            
+            // 1. 直接存入数据库
+            if (!chatHistory[friend.id]) chatHistory[friend.id] = [];
+            
+            // 处理一下特殊格式 (比如表情包指令)
+            let saveContent = fullText;
+            // 简单处理表情包 (如果AI回复里包含了指令，这里直接存文本，渲染时会变)
+            // 这里为了简单，直接存原文，渲染函数会处理
+            
+            chatHistory[friend.id].push({
+                role: 'assistant',
+                content: saveContent,
+                timestamp: Date.now()
+            });
+            await saveData();
+
+            // 2. 弹窗 + 通知音
+            pushNotification(friend.name, saveContent, friend.avatar, 'chat', friend.id);
+        }
+
+    } catch (e) {
+        console.error("请求失败", e);
+        // 移除 typing
+        const typingBubble = document.querySelector('.typing-dots');
+        if (typingBubble && typingBubble.parentElement.parentElement) {
+            typingBubble.parentElement.parentElement.remove();
+        }
+        
+        // 只有在看的时候才弹 alert
+        if (document.getElementById('screen-chat').classList.contains('active')) {
+            alert("AI 没反应：" + e.message);
+        }
     }
 }
 
@@ -799,7 +822,7 @@ function createAiBubble(avatarUrl, initialText) {
     msgDiv.innerHTML = `<img src="${avatarUrl}" class="msg-avatar"><div class="msg-bubble">${content}</div>`;
     box.appendChild(msgDiv);
     scrollToBottom();
-    currentBubbleDOM = msgDiv.querySelector('.msg-bubble');
+    currentBubbleDOM = msgDiv.querySelector('.msg-bubble');playSystemSound('chat'); // 播放气泡音
 }
 
 // ==========================================
@@ -2406,26 +2429,26 @@ async function triggerAutoReplyMoment(friend, moment) {
     }
 }
 
-// === (修复版) 行为实现：主动发起聊天 ===
+// ==========================================
+//   (最终修正版) AI 主动聊天：严格区分前台/后台
+// ==========================================
 async function triggerAutoChat(friend) {
-    console.log(`🚀 [调试] ${friend.name} 开始尝试发送主动消息...`);
+    console.log(`🚀 [调试] ${friend.name} 准备发送主动消息...`);
 
-    // 1. 检查 API Key
-    if (!apiConfig.key) {
-        console.error("❌ [调试] 失败：没有 API Key");
-        return;
-    }
+    if (!apiConfig.key) return;
 
     try {
-        // 2. 构造提示词 (Prompt)
+        // 1. 构造 Prompt
+        const globalMemory = getGlobalContext(friend.id); 
         const systemPrompt = `你现在是 ${friend.name}，人设：${friend.prompt}。
         你决定主动给用户发一条消息。
-        可以是分享刚才发生的趣事，或者是问候用户，或者是继续之前的话题。
-        【要求】：
-        1. 直接输出你要说的话，不要带引号，不要带动作描写（除非在括号里）。
-        2. 简短一点，像朋友聊微信一样。`;
+        ${globalMemory}  // <--- 注入记忆
 
-        // 3. 发送请求
+    【要求】：
+    1. 结合当前时间、之前的动态或聊天话题，发起一个新的话题，或者继续之前的话题。
+    2. 简短自然，不要带引号。直接输出内容。`;
+
+        // 2. 请求 API
         const response = await fetch(`${apiConfig.url}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
@@ -2438,46 +2461,41 @@ async function triggerAutoChat(friend) {
             })
         });
 
-        // 4. 检查网络错误
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`API 请求失败: ${response.status} - ${errText}`);
-        }
+        if (!response.ok) throw new Error("API 请求失败");
 
         const result = await response.json();
         const text = result.choices[0].message.content;
+        console.log(`✅ [调试] 收到内容: ${text}`);
 
-        console.log(`✅ [调试] ${friend.name} 生成了内容: ${text}`);
-
-        // 5. 保存消息到数据库
+        // 3. 存入历史记录
         if (!chatHistory[friend.id]) chatHistory[friend.id] = [];
-        
         chatHistory[friend.id].push({ 
             role: 'assistant', 
             content: text,
-            timestamp: Date.now() // 加上时间戳
+            timestamp: Date.now()
         });
-        
-        await saveData(); // 等待保存完成
+        await saveData();
 
-        if (currentChatId !== friend.id || !document.getElementById('screen-chat').classList.contains('active')) {
-            pushNotification(friend.name, text, friend.avatar, 'chat', friend.id);
-        }
-
-        // 6. 刷新界面 UI
-        // 刷新好友列表 (为了显示红点/最新消息预览)
+        // 刷新好友列表 (红点/预览更新)
         renderFriendList(); 
-        
-        // 如果你正好开着和这个人的聊天窗口，直接把气泡画出来，并滚到底部
-        if (currentChatId === friend.id && document.getElementById('screen-chat').classList.contains('active')) {
-            renderChatHistory();
+
+        // === 核心判断逻辑 ===
+        // 条件：当前打开的聊天ID是这个人 AND 聊天屏幕是激活状态
+        const isUserWatching = (currentChatId === friend.id) && document.getElementById('screen-chat').classList.contains('active');
+
+        if (isUserWatching) {
+            // [情况A：你在看] -> 直接上墙，播气泡音
+            renderChatHistory(); 
             scrollToBottom();
+            if (typeof playSystemSound === "function") playSystemSound('chat');
+        } else {
+            // [情况B：你没在看] -> 弹窗，播通知音
+            // 注意：这里绝对不调用 playSystemSound('chat')
+            pushNotification(friend.name, text, friend.avatar, 'chat', friend.id);
         }
 
     } catch(e) { 
         console.error("❌ [调试] 主动聊天出错:", e);
-        // 如果你想看到报错弹窗，可以把下面这行注释取消掉：
-        // alert(`${friend.name} 想找你聊天，但失败了：\n${e.message}`);
     }
 }
 
@@ -2810,12 +2828,15 @@ async function triggerAutoMoment(friend) {
 
     try {
         // 1. 构造提示词
+        const globalMemory = getGlobalContext(friend.id);
         const systemPrompt = `你现在是 ${friend.name}，人设：${friend.prompt}。
         【当前任务】：请分享你的生活、心情或吐槽，发一条“朋友圈”动态。
+        ${globalMemory} // <--- 注入记忆
+
         【要求】：
         1. 必须返回纯 JSON 格式。
         2. 格式：{"text": "正文内容", "img_desc": "对配图的画面描述"}
-        3. 内容要符合人设，简短自然，不要太长。`;
+        3. 内容要符合人设，简短自然，不要太长。 根据当前时间（比如深夜、清晨）和最近发生的事来写。`;
 
         // 2. 请求 AI
         const response = await fetch(`${apiConfig.url}/chat/completions`, {
@@ -2875,12 +2896,24 @@ async function triggerAutoMoment(friend) {
 }
 
 // ==========================================
-//   (新增) 通知栏系统核心
+//   (最终修正版) 通知栏系统
 // ==========================================
 function pushNotification(title, content, avatar, type, targetId) {
-    const area = document.getElementById('notification-area');
-    
-    // 创建弹窗元素
+    // 1. 播放通知音 (Notif Sound) - 绝对不播气泡音
+    if (typeof playSystemSound === "function") {
+        playSystemSound('notif'); 
+    }
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    // 2. 获取容器 (如果没有就自动创建一个，防止报错)
+    let area = document.getElementById('notification-area');
+    if (!area) {
+        area = document.createElement('div');
+        area.id = 'notification-area';
+        document.querySelector('.phone-frame').appendChild(area);
+    }
+
+    // 3. 创建弹窗 DOM
     const div = document.createElement('div');
     div.className = 'notification-banner';
     
@@ -2891,35 +2924,31 @@ function pushNotification(title, content, avatar, type, targetId) {
         <img src="${avatar}" class="notif-avatar">
         <div class="notif-content">
             <div class="notif-title">
-                <span>${title}</span>
+                <span style="font-weight:bold; color:#333;">${title}</span>
                 <span class="notif-time">${timeStr}</span>
             </div>
             <div class="notif-text">${content}</div>
         </div>
     `;
 
-    // 点击事件：根据类型跳转
+    // 4. 点击跳转逻辑
     div.onclick = () => {
-        div.remove(); // 点击后立刻消失
+        div.remove();
         if (type === 'chat') {
-            openChat(targetId); // 跳转聊天
+            openChat(targetId);
         } else if (type === 'moment') {
-            goToScreen('screen-friends'); // 先去好友页
-            switchQqTab('moments'); // 切换到动态 Tab
+            goToScreen('screen-friends');
+            switchQqTab('moments');
         }
     };
 
-    // 添加到页面
+    // 5. 显示并自动消失
     area.appendChild(div);
-
-    // 播放系统提示音 (可选，这里用震动模拟，如果有的话)
-    if (navigator.vibrate) navigator.vibrate(200);
-
-    // 4秒后自动消失
     setTimeout(() => {
         div.style.opacity = '0';
         div.style.transform = 'translateY(-20px)';
-        setTimeout(() => div.remove(), 300); // 等动画播完再删
+        div.style.transition = 'all 0.3s';
+        setTimeout(() => div.remove(), 300);
     }, 4000);
 }
 
@@ -3270,13 +3299,14 @@ function showIncomingCallScreen(reason) {
 
     // 可以在这里加一个来电铃声 (可选)
     // const ringtone = new Audio('path/to/ringtone.mp3');
-    // ringtone.play();
+    playSystemSound('ring', true); // true 表示循环播放
 }
 
 /**
  * 用户点击“接听”按钮
  */
 function acceptCall() {
+    stopRingtone(); // 停止铃声
     // 直接进入已有的视频通话界面
     enterVideoCall(); 
 }
@@ -3285,6 +3315,7 @@ function acceptCall() {
  * 用户点击“拒接”按钮
  */
 function declineCall() {
+    stopRingtone(); // 停止铃声
     // 1. 隐藏来电界面，返回聊天
     goToScreen('screen-chat');
 
@@ -3307,4 +3338,208 @@ function declineCall() {
     setTimeout(() => {
         triggerAIResponse(true); // isReaction=true 告诉AI这是对事件的反应
     }, 500);
+}
+// ==========================================
+//   🔊 声音系统 (Sound System)
+// ==========================================
+
+// 1. 声音配置与资源
+let soundConfig = {
+    notif: 'default',
+    chat: 'default',
+    ring: 'default'
+};
+
+// 存储自定义音频数据的缓存
+let customSounds = {
+    notif: null,
+    chat: null,
+    ring: null
+};
+
+// 内置音效链接 (使用免费CDN资源)
+const BUILTIN_SOUNDS = {
+    notif: {
+        default: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3', // 叮
+        soft: 'https://assets.mixkit.co/active_storage/sfx/2344/2344-preview.mp3'    // 水滴
+    },
+    chat: {
+        default: 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3', // 啵
+        typewriter: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' // 机械点击
+    },
+    ring: {
+        default: 'https://assets.mixkit.co/active_storage/sfx/1362/1362-preview.mp3', // 电子铃
+        classic: 'https://assets.mixkit.co/active_storage/sfx/1361/1361-preview.mp3'  // 旧电话
+    }
+};
+
+let currentRingtoneAudio = null; // 用于控制铃声停止
+
+// 2. 初始化加载声音设置
+async function loadSoundSettings() {
+    const saved = await localforage.getItem('ai_sound_config');
+    const custom = await localforage.getItem('ai_custom_sounds');
+    
+    if (saved) soundConfig = saved;
+    if (custom) customSounds = custom;
+    
+    // 更新UI状态
+    document.getElementById('sound-select-notif').value = soundConfig.notif;
+    document.getElementById('sound-select-chat').value = soundConfig.chat;
+    document.getElementById('sound-select-ring').value = soundConfig.ring;
+    
+    // 显示自定义文件的状态
+    ['notif', 'chat', 'ring'].forEach(type => {
+        if(soundConfig[type] === 'custom' && customSounds[type]) {
+            document.getElementById(`custom-name-${type}`).style.display = 'block';
+        }
+    });
+}
+// 在 window.onload 中调用
+// 请注意：你需要把 loadSoundSettings() 添加到 window.onload 函数里去 (见下文)
+
+// 3. 预览/播放声音
+function playSystemSound(type, isLoop = false) {
+    let src = '';
+    const key = soundConfig[type];
+
+    if (key === 'custom') {
+        if (customSounds[type]) src = customSounds[type];
+        else return; // 选了自定义但没文件，不播放
+    } else {
+        src = BUILTIN_SOUNDS[type][key];
+    }
+
+    if (!src) return;
+
+    const audio = new Audio(src);
+    audio.loop = isLoop;
+    audio.volume = 0.8;
+    audio.play().catch(e => console.log("播放失败(需用户交互):", e));
+
+    if (isLoop) currentRingtoneAudio = audio; // 保存引用以便停止
+    return audio;
+}
+
+// 4. 停止铃声
+function stopRingtone() {
+    if (currentRingtoneAudio) {
+        currentRingtoneAudio.pause();
+        currentRingtoneAudio.currentTime = 0;
+        currentRingtoneAudio = null;
+    }
+}
+
+// 5. 设置页面的交互逻辑
+function previewSound(type) {
+    const select = document.getElementById(`sound-select-${type}`);
+    const val = select.value;
+    
+    if (val === 'custom') {
+        // 触发文件上传
+        document.getElementById(`file-${type}`).click();
+    } else {
+        // 临时播放选中的内置声音
+        const tempAudio = new Audio(BUILTIN_SOUNDS[type][val]);
+        tempAudio.play();
+        soundConfig[type] = val; // 暂存选择
+    }
+}
+
+function handleSoundUpload(type, input) {
+    const file = input.files[0];
+    if (!file) {
+        // 如果用户取消选择，恢复到 default
+        document.getElementById(`sound-select-${type}`).value = 'default';
+        return;
+    }
+    
+    // 转为 Base64 存入 DB
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64 = e.target.result;
+        customSounds[type] = base64; // 更新内存
+        soundConfig[type] = 'custom'; // 更新配置
+        
+        document.getElementById(`custom-name-${type}`).innerText = `已加载: ${file.name}`;
+        document.getElementById(`custom-name-${type}`).style.display = 'block';
+        
+        // 播放一下确认
+        const audio = new Audio(base64);
+        audio.play();
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveSoundSettings() {
+    localforage.setItem('ai_sound_config', soundConfig);
+    localforage.setItem('ai_custom_sounds', customSounds);
+    alert("声音设置已保存！");
+    goToScreen('screen-settings-menu');
+}
+
+// ==========================================
+//   🧠 全局记忆核心 (The Global Brain)
+// ==========================================
+function getGlobalContext(friendId) {
+    const friend = friendsData.find(f => f.id === friendId);
+    if (!friend) return "";
+
+    // 1. 获取当前时间
+    const now = new Date();
+    const timeStr = now.toLocaleString('zh-CN', { hour12: false, weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    
+    // 2. 整理最近聊天记录 (取最后 15 条)
+    const chats = (chatHistory[friendId] || []).slice(-15);
+    const chatContext = chats.map(msg => {
+        const role = msg.role === 'user' ? friend.userName : friend.name;
+        // 过滤掉系统指令，只保留纯文本，节省 Token
+        let content = msg.content.replace(/###.*?###/g, '[动作/指令]'); 
+        return `${role}: ${content}`;
+    }).join('\n');
+
+    // 3. 整理最近朋友圈动态 (AI发的 + 用户发的)
+    // 找出关于这个好友相关的最近 5 条动态
+    const relatedMoments = momentsData.filter(m => 
+        m.friendId === friendId || // AI发的
+        (m.author === 'user' && m.visibleTo && m.visibleTo.includes(friendId)) // 用户发给AI看的
+    ).slice(0, 5);
+
+    let momentContext = "";
+    if (relatedMoments.length > 0) {
+        momentContext = relatedMoments.map(m => {
+            const author = m.author === 'user' ? '用户' : friend.name;
+            const time = new Date(m.timestamp).toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'numeric', minute:'numeric'});
+            
+            // 检查互动情况
+            let interaction = "";
+            if (m.isLiked) interaction += "[用户点了赞]";
+            if (m.comments && m.comments.length > 0) {
+                m.comments.forEach(c => {
+                    const cName = c.name || (c.author === 'user' ? '用户' : friend.name);
+                    interaction += ` [${cName}评论: ${c.content}]`;
+                });
+            }
+            
+            return `[${time}] ${author}发了一条动态: "${m.text}" (配图: ${m.imageDescription}) ${interaction}`;
+        }).join('\n');
+    } else {
+        momentContext = "(暂无最近动态)";
+    }
+
+    // 4. 组装最终记忆块
+    return `
+    【全局状态记忆】
+    [当前现实时间]: ${timeStr}
+    
+    [近期朋友圈动态与互动]:
+    ${momentContext}
+    
+    [最近聊天对话]:
+    ${chatContext}
+    
+    [你的记忆指令]:
+    请结合上述动态、聊天记录和时间，保持对话的连贯性。不要重复之前说过的话。
+    如果用户提到刚才的动态，请立刻反应过来。
+    `;
 }
