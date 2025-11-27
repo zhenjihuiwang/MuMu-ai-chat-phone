@@ -9,6 +9,7 @@ let currentTheme = 'theme-candy'; // 默认主题
 let stickerLibrary = []; // 存储所有表情包对象 {id, src, desc}
 let momentsData = []; // 存储所有动态
 let isWorldActive = true; // 默认世界是运转的
+let currentVideoLog = []; // 暂存当前视频通话的剧本
 
 // === 新增工具：将时间戳转为 HH:mm ===
 function formatMsgTime(timestamp) {
@@ -409,6 +410,34 @@ function appendMessageToUI(content, isUser, avatarUrl, index, timestamp) {
                 ${timeHtml} <!-- 核心修改：时间放在表情气泡内部 -->
             </div>
         `;
+
+        } else if (content.startsWith('###VIDEO_LOG:')) {
+        // === 新增：视频记录卡片渲染 ===
+        const jsonStr = content.replace('###VIDEO_LOG:', '').replace('###', '');
+        let logData = {};
+        try { logData = JSON.parse(jsonStr); } catch(e) {}
+        
+        // 计算时间显示
+        const dateObj = new Date(timestamp || Date.now());
+        const timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+        
+        // 点击事件：打开回顾弹窗
+        const clickAction = (!isSelectionMode) ? `onclick="openVideoHistoryModal(${index})"` : "";
+
+        innerHtml = `
+            <div class="message system"> <!-- 借用 system 让它居中，但内部自定义 -->
+                <div class="bubble-video-record" ${clickAction}>
+                    <div class="record-content">
+                        <div class="record-icon"><i class="fas fa-film"></i></div>
+                        <div class="record-info">
+                            <h4>视频通话回顾</h4>
+                            <p>${timeStr} · 剧本已生成</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
     } else {
         // 普通文本消息
         const clickAction = (!isSelectionMode && index !== undefined && index !== -1) ? `onclick="onMessageClick(${index})"` : "";
@@ -2903,31 +2932,55 @@ async function forceHeartbeat() {
 
 // 1. 进入视频通话
 function enterVideoCall() {
-    // 隐藏聊天界面，显示视频界面
     goToScreen('screen-video-call'); 
-    
-    // 设置对方头像
     const friend = friendsData.find(f => f.id === currentChatId);
-    if(friend) {
-        document.getElementById('video-partner-avatar').src = friend.avatar;
-    }
+    if(friend) document.getElementById('video-partner-avatar').src = friend.avatar;
     
-    // 清空上次的通话记录
     document.getElementById('video-chat-box').innerHTML = '';
-    
-    // 启动星星背景
     initStars();
     
-    // 自动触发一句开场白 (模拟接通)
+    // --- 新增：清空剧本记录 ---
+    currentVideoLog = []; 
+    // ------------------------
+
+    // 自动开场
     addVideoMessage('narration', '信号连接成功...');
-    setTimeout(() => {
-        triggerVideoAI(true); // true 表示是开场白，不需要用户先说话
-    }, 1000);
+    setTimeout(() => { triggerVideoAI(true); }, 1000);
 }
 
 // 2. 退出视频通话
+// 修改后的退出函数：修复刷新问题
 function exitVideoCall() {
-    goToScreen('screen-chat'); // 回到普通聊天
+    // 1. 先判断有没有聊天记录需要保存
+    if (currentVideoLog.length > 0) {
+        const logData = {
+            id: Date.now(),
+            duration: currentVideoLog.length,
+            logs: currentVideoLog
+        };
+        
+        const content = `###VIDEO_LOG:${JSON.stringify(logData)}###`;
+        
+        if (!chatHistory[currentChatId]) chatHistory[currentChatId] = [];
+        chatHistory[currentChatId].push({
+            role: 'system',
+            content: content,
+            timestamp: Date.now()
+        });
+        
+        // 保存数据
+        saveData();
+    }
+
+    // 2. 关键修改：先切换回聊天界面
+    goToScreen('screen-chat'); 
+
+    // 3. 强制重新渲染聊天列表，并滚到底部
+    // 使用 setTimeout 稍微延时一点点，确保界面切换动画完成后再渲染，保证万无一失
+    setTimeout(() => {
+        renderChatHistory(); // 重新画气泡
+        scrollToBottom();    // 滚到底部看到新气泡
+    }, 50);
 }
 
 // 3. 初始化星星动画 (性能优化版)
@@ -3105,8 +3158,19 @@ function playVideoQueue(queue, index) {
 function addVideoMessage(type, content) {
     const box = document.getElementById('video-chat-box');
     const div = document.createElement('div');
-    div.className = 'v-msg'; // 基础类
+    div.className = 'v-msg'; 
     
+    // --- 新增：实时记录剧本 ---
+    // 把每一条消息都存进数组里
+    if (content !== '信号连接成功...' && content !== '正在聆听...') {
+        currentVideoLog.push({
+            type: type, // 'user', 'ai', 'narration'
+            content: content,
+            time: Date.now()
+        });
+    }
+    // ------------------------
+
     if (type === 'user') {
         div.classList.add('v-user-msg');
         div.innerHTML = `<div class="bubble">${content}</div>`;
@@ -3119,6 +3183,42 @@ function addVideoMessage(type, content) {
     }
     
     box.appendChild(div);
-    box.scrollTop = box.scrollHeight; // 自动滚动到底部
-    return div; // 返回元素方便后续操作（如移除loading）
+    box.scrollTop = box.scrollHeight;
+    return div; 
+}
+
+// 打开剧本回顾
+function openVideoHistoryModal(msgIndex) {
+    const msg = chatHistory[currentChatId][msgIndex];
+    if (!msg) return;
+    
+    const jsonStr = msg.content.replace('###VIDEO_LOG:', '').replace('###', '');
+    const data = JSON.parse(jsonStr);
+    const logs = data.logs || [];
+    const friend = friendsData.find(f => f.id === currentChatId);
+    
+    const list = document.getElementById('video-script-list');
+    list.innerHTML = ''; // 清空
+    
+    logs.forEach(item => {
+        const div = document.createElement('div');
+        
+        if (item.type === 'narration') {
+            div.className = 'script-item narration';
+            div.innerText = item.content;
+        } else {
+            div.className = 'script-item dialogue';
+            // 如果是 user 显示 '我'，如果是 ai 显示角色名
+            const name = (item.type === 'user') ? '我' : friend.name;
+            div.innerHTML = `<span class="script-role">${name}:</span> ${item.content}`;
+        }
+        list.appendChild(div);
+    });
+    
+    document.getElementById('modal-video-history').style.display = 'flex';
+}
+
+// 关闭剧本回顾
+function closeVideoHistoryModal() {
+    document.getElementById('modal-video-history').style.display = 'none';
 }

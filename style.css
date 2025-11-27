@@ -205,7 +205,7 @@ input, textarea, select {
 .quote-box { background: rgba(0,0,0,0.05); padding: 8px; margin: 0 10px 5px; border-radius: 5px; display: flex; font-size: 12px; }
 .quote-content { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .close-quote-btn { border: none; background: none; cursor: pointer; }
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
 .action-sheet { background: white; width: 96%; border-radius: 15px 15px 0 0; padding: 10px 0; margin-bottom: 10px; animation: slideUp 0.3s; }
 .action-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; color: #333; }
 .action-item.destruct { color: red; }
@@ -1879,3 +1879,126 @@ body.theme-clay .notification-banner {
     background: linear-gradient(135deg, #444, #222); border: 1px solid var(--gold-primary); color: var(--gold-primary);
 }
 .btn-magic i { filter: drop-shadow(0 0 2px var(--gold-primary)); }
+
+/* ==============================================
+   新增：视频通话记录 & 回顾弹窗 (黑金回响版)
+   ============================================== */
+
+/* 1. 聊天气泡：黑金回响卡片 */
+.bubble-video-record {
+    background: linear-gradient(135deg, #1a1a1a, #050505);
+    border: 1px solid rgba(212, 175, 55, 0.3); /* 金色微边框 */
+    border-radius: 12px;
+    padding: 12px 15px;
+    width: 240px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.bubble-video-record:active { transform: scale(0.98); }
+
+/* 金色流光动画 */
+.bubble-video-record::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+    transform: rotate(45deg);
+    animation: goldShine 4s infinite; /* 流光划过 */
+}
+@keyframes goldShine { 
+    0% { left: -120%; } 20% { left: 120%; } 100% { left: 120%; } 
+}
+
+.record-content {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 12px;
+}
+.record-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(212, 175, 55, 0.1); 
+    border: 1px solid #D4AF37;
+    color: #D4AF37; 
+    display: flex; justify-content: center; align-items: center; 
+    font-size: 16px;
+}
+.record-info h4 { color: #eee; font-size: 13px; margin-bottom: 3px; font-weight: bold; }
+.record-info p { color: #888; font-size: 11px; margin: 0; }
+
+
+/* 2. 回顾弹窗：剧本模式 */
+#modal-video-history .modal-content {
+    /* 黑金主题 */
+    background: #0a0a0a; 
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    color: #ddd;
+    width: 90%; height: 70%;
+    display: flex; flex-direction: column;
+}
+
+#modal-video-history .history-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 15px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+#modal-video-history h3 { color: #D4AF37; font-size: 16px; letter-spacing: 1px; }
+
+/* 剧本列表 */
+.script-list {
+    flex: 1; overflow-y: auto; 
+    display: flex; flex-direction: column; gap: 15px; 
+    padding: 10px 5px;
+}
+.script-item { font-size: 13px; line-height: 1.6; }
+
+/* 旁白样式 */
+.script-item.narration {
+    color: #888; 
+    border-left: 2px solid #D4AF37; /* 左侧金线 */
+    padding-left: 10px; 
+    font-size: 12px;
+}
+
+/* 对话样式 */
+.script-item.dialogue {
+    color: #fff; 
+    background: rgba(255,255,255,0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-left: 12px; /* 缩进一点 */
+}
+.script-role { color: #D4AF37; font-weight: bold; font-size: 12px; margin-right: 5px; }
+
+/* 滚动条美化 */
+.script-list::-webkit-scrollbar { width: 4px; }
+.script-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+/* ==============================================
+   修复：弹窗适配手机屏幕
+   ============================================== */
+
+/* 1. 确保弹窗只在手机屏幕内显示 */
+#modal-video-history {
+    position: absolute; /* 绝对定位，相对于 phone-frame */
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    z-index: 200; /* 保证在最上层 */
+    border-radius: 40px; /* 跟随手机圆角 */
+    overflow: hidden; /* 防止内容溢出圆角 */
+}
+
+/* 2. 调整弹窗内容的尺寸，让它不要太满 */
+#modal-video-history .modal-content {
+    width: 90%;          /* 宽度占手机的 90% */
+    height: 75%;         /* 高度占手机的 75% */
+    max-height: 800px;   /* 防止过大 */
+    margin: 0;           /* 去掉外边距 */
+    
+    /* 确保黑金配色正确 */
+    background: #0a0a0a; 
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
