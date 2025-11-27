@@ -329,7 +329,7 @@
                             <span>拍照</span>
                         </div>
                         <!-- 视频 -->
-                        <div class="drawer-item" onclick="alert('视频聊天开发中...')">
+                        <div class="drawer-item" onclick="enterVideoCall()">
                             <div class="d-icon"><i class="fas fa-video"></i></div>
                             <span>视频</span>
                         </div>
@@ -486,6 +486,54 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 6. 新增：视频通话界面 (磨砂黑金版) -->
+    <!-- ============================================== -->
+    <div id="screen-video-call" class="screen">
+        <div class="phone-frame-inner">
+            <!-- 纯净星空背景 -->
+            <div id="star-bg" class="bg-layer"></div>
+
+            <!-- 界面交互层 -->
+            <div class="interface-layer">
+                
+                <!-- 顶部：角色小窗 + 挂断 -->
+                <div class="video-top-bar">
+                    <div class="pip-window">
+                        <!-- 这里的头像会由 JS 自动替换 -->
+                        <img id="video-partner-avatar" src="" class="pip-img">
+                        <!-- 音频波形 -->
+                        <div class="wave-container">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-hangup" onclick="exitVideoCall()"><i class="fas fa-phone-slash"></i></button>
+                </div>
+
+                <!-- 聊天区域 -->
+                <div class="video-chat-area" id="video-chat-box">
+                    <!-- 消息会显示在这里 -->
+                </div>
+
+                <!-- 底部：输入 + 双按钮 -->
+                <div class="video-bottom-bar">
+                    <input type="text" id="video-input" class="video-input-box" placeholder="输入回复...">
+                    
+                    <!-- 获取回复 (Magic) -->
+                    <button class="circle-btn btn-magic" onclick="triggerVideoAI(false)" title="让AI回应">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </button>
+                    
+                    <!-- 发送消息 (Send) -->
+                    <button class="circle-btn btn-send" onclick="sendVideoMessage()" title="发送">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

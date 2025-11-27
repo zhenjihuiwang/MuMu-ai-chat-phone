@@ -2896,3 +2896,229 @@ async function forceHeartbeat() {
 
     alert("所有角色都检查完毕！\n如果有人想找你，你很快会收到通知或消息。");
 }
+
+// ==========================================
+//   新增功能：黑金星空视频通话系统
+// ==========================================
+
+// 1. 进入视频通话
+function enterVideoCall() {
+    // 隐藏聊天界面，显示视频界面
+    goToScreen('screen-video-call'); 
+    
+    // 设置对方头像
+    const friend = friendsData.find(f => f.id === currentChatId);
+    if(friend) {
+        document.getElementById('video-partner-avatar').src = friend.avatar;
+    }
+    
+    // 清空上次的通话记录
+    document.getElementById('video-chat-box').innerHTML = '';
+    
+    // 启动星星背景
+    initStars();
+    
+    // 自动触发一句开场白 (模拟接通)
+    addVideoMessage('narration', '信号连接成功...');
+    setTimeout(() => {
+        triggerVideoAI(true); // true 表示是开场白，不需要用户先说话
+    }, 1000);
+}
+
+// 2. 退出视频通话
+function exitVideoCall() {
+    goToScreen('screen-chat'); // 回到普通聊天
+}
+
+// 3. 初始化星星动画 (性能优化版)
+function initStars() {
+    const starContainer = document.getElementById('star-bg');
+    starContainer.innerHTML = ''; // 清空防止重复
+    for(let i=0; i<70; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        const size = Math.random() * 1.5 + 1; 
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.setProperty('--dur', (Math.random() * 3 + 2) + 's');
+        star.style.animationDelay = (Math.random() * 2) + 's';
+        starContainer.appendChild(star);
+    }
+}
+
+// ==========================================
+//   核心修改：手动控制回复 & 屏幕记忆读取
+// ==========================================
+
+// 4. 发送用户消息 (修改版：只发送，不触发AI)
+function sendVideoMessage() {
+    const input = document.getElementById('video-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // 只在屏幕上显示气泡
+    addVideoMessage('user', text);
+    input.value = '';
+    
+}
+
+// ==========================================
+//   核心升级：电影感旁白 & 连续剧本模式
+// ==========================================
+
+async function triggerVideoAI(isInit = false) {
+    if (!apiConfig.key) { alert("请先设置API Key"); return; }
+    
+    const friend = friendsData.find(f => f.id === currentChatId);
+    const loadingDiv = addVideoMessage('narration', '正在渲染画面...');
+
+    try {
+        // --- A. 构造剧本指令 (Director's Cut) ---
+        // 关键修改：极大地丰富了对 ###ACT: 的描写要求
+        const systemPrompt = `你现在正在和用户进行【视频通话】。
+        你扮演：${friend.name}。人设：${friend.prompt}。
+        
+        【核心指令】：
+        请像写剧本一样回复，输出【多条】连续的内容。
+        请严格遵守以下格式，每一行只写一个动作或一句话：
+        
+        格式说明：
+        ###ACT: 旁白描写
+        ###SAY: 语音对话
+        
+        【旁白描写要求 (重要)】：
+        1. 不要只写动作，要有**电影镜头感**和**文学感**。
+        2. 细致描写：光影变化、风吹发丝、微表情、眼神流转、背景环境氛围等。
+        3. 字数不限，可以写得唯美、细腻、有氛围感。
+        
+        示例：
+        ###ACT: 屏幕里的光线暗了下来，窗外的晚风轻轻吹起他的刘海，他微微低下头，耳根泛起一丝红晕。
+        ###SAY: 那个... 其实我一直在等你电话。
+        ###ACT: 猛地抬起头，眼神里闪烁着路灯倒映的微光，显得有些慌乱。
+        ###SAY: 我是说... 刚好没睡。
+        
+        【语音对话要求】：
+        口语化，自然，符合人设。`;
+
+        let messages = [
+            { role: "system", content: systemPrompt }
+        ];
+
+        // --- B. 注入记忆：文字聊天记录 ---
+        const recentHistory = (chatHistory[currentChatId] || []).slice(-3);
+        recentHistory.forEach(msg => {
+            if(!msg.content.includes('###')) {
+                messages.push({ role: msg.role, content: msg.content });
+            }
+        });
+
+        // --- C. 注入记忆：屏幕上的气泡 ---
+        const screenBubbles = document.querySelectorAll('#video-chat-box .v-msg');
+        screenBubbles.forEach(div => {
+            const text = div.innerText.trim();
+            if (div.classList.contains('v-user-msg')) {
+                messages.push({ role: "user", content: text });
+            }
+            else if (div.classList.contains('v-ai-msg')) {
+                messages.push({ role: "assistant", content: `###SAY:${text}` });
+            }
+        });
+
+        // --- D. 触发逻辑 ---
+        if (isInit) {
+             messages.push({ role: "user", content: "（视频通话已接通，请你先开口打招呼）" });
+        } else {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg && lastMsg.role === 'assistant') {
+                messages.push({ role: "user", content: "（请继续你的反应，或者补充几句）" });
+            }
+        }
+
+        // --- E. 发送请求 ---
+        const response = await fetch(`${apiConfig.url}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
+            body: JSON.stringify({
+                model: apiConfig.model,
+                messages: messages,
+                temperature: 0.85 // 温度再高一点，让描写更富有创造力
+            })
+        });
+
+        const data = await response.json();
+        const rawContent = data.choices[0].message.content;
+
+        // --- F. 解析剧本并播放 ---
+        loadingDiv.remove();
+
+        const lines = rawContent.split('\n');
+        const queue = [];
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (!line) return;
+
+            if (line.startsWith('###ACT:')) {
+                queue.push({ type: 'narration', text: line.replace('###ACT:', '').trim() });
+            } 
+            else if (line.startsWith('###SAY:')) {
+                queue.push({ type: 'ai', text: line.replace('###SAY:', '').trim() });
+            }
+            else if (line.length > 0) {
+                const cleanText = line.replace(/###/g, '').trim();
+                if(cleanText) queue.push({ type: 'ai', text: cleanText });
+            }
+        });
+
+        playVideoQueue(queue, 0);
+
+    } catch (e) {
+        if(loadingDiv) loadingDiv.innerText = "信号中断...";
+        console.error(e);
+    }
+}
+
+// 辅助函数保持不变
+function playVideoQueue(queue, index) {
+    if (index >= queue.length) return;
+
+    const item = queue[index];
+    addVideoMessage(item.type, item.text);
+
+    // 计算延迟：因为现在的旁白变长了，用户需要更多时间阅读
+    // 所以如果 type 是 narration，延迟要根据字数动态计算
+    let delay = 1200; 
+    
+    if (item.type === 'narration') {
+        // 基础 1秒 + 每5个字多读 0.1秒
+        delay = 1000 + (item.text.length * 50); 
+    }
+
+    setTimeout(() => {
+        playVideoQueue(queue, index + 1);
+    }, delay);
+}
+
+// 6. 渲染黑金气泡到屏幕
+function addVideoMessage(type, content) {
+    const box = document.getElementById('video-chat-box');
+    const div = document.createElement('div');
+    div.className = 'v-msg'; // 基础类
+    
+    if (type === 'user') {
+        div.classList.add('v-user-msg');
+        div.innerHTML = `<div class="bubble">${content}</div>`;
+    } else if (type === 'ai') {
+        div.classList.add('v-ai-msg');
+        div.innerHTML = `<div class="bubble">${content}</div>`;
+    } else if (type === 'narration') {
+        div.classList.add('v-narration');
+        div.innerHTML = `<span>${content}</span>`;
+    }
+    
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight; // 自动滚动到底部
+    return div; // 返回元素方便后续操作（如移除loading）
+}

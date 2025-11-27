@@ -1716,3 +1716,166 @@ body.theme-clay .notification-banner {
     /* 凸起效果 */
     box-shadow: 5px 5px 10px #c4cdd8, -5px -5px 10px #ffffff;
 }
+
+/* ==============================================
+   新增：视频通话界面样式 (黑金星空版)
+   ============================================== */
+:root {
+    --gold-primary: #D4AF37;
+    --gold-glow: rgba(212, 175, 55, 0.4);
+    --bg-deep: #050505;
+    --glass-bg: rgba(20, 20, 20, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* 适配不同主题的覆盖层 */
+#screen-video-call {
+    background: #1a1a1a;
+    color: #eee;
+    overflow: hidden; /* 防止星星溢出 */
+}
+
+.phone-frame-inner {
+    width: 100%; height: 100%; position: relative;
+}
+
+/* 背景层 */
+.bg-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% 80%, #1a1a1a 0%, #000000 100%);
+    z-index: 0;
+}
+.star {
+    position: absolute; background: white; border-radius: 50%;
+    animation: twinkle var(--dur) infinite ease-in-out; opacity: 0;
+    box-shadow: 0 0 3px var(--gold-primary);
+}
+@keyframes twinkle { 
+    0%, 100% { opacity: 0.1; transform: scale(0.5); } 
+    50% { opacity: 0.7; transform: scale(1.2); } 
+}
+
+/* 界面层 */
+.interface-layer {
+    position: relative; z-index: 10; width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    background: rgba(0,0,0,0.1);
+}
+
+/* 顶部 */
+.video-top-bar { 
+    padding: 50px 20px 10px; display: flex; justify-content: space-between; align-items: flex-start; 
+}
+.pip-window {
+    width: 85px; height: 110px; border-radius: 12px; position: relative; overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5); background: #000;
+}
+.pip-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
+
+/* 波形动画 */
+.wave-container {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    display: flex; justify-content: center; align-items: flex-end; gap: 3px; padding-bottom: 5px;
+}
+.bar {
+    width: 3px; background: var(--gold-primary); border-radius: 2px;
+    animation: waveform 1s ease-in-out infinite;
+}
+.bar:nth-child(1) { height: 10px; animation-duration: 0.8s; }
+.bar:nth-child(2) { height: 15px; animation-duration: 1.1s; }
+.bar:nth-child(3) { height: 20px; animation-duration: 1.3s; }
+.bar:nth-child(4) { height: 12px; animation-duration: 0.9s; }
+.bar:nth-child(5) { height: 8px; animation-duration: 1.0s; }
+@keyframes waveform {
+    0%, 100% { height: 5px; opacity: 0.5; }
+    50% { height: 18px; opacity: 1; box-shadow: 0 0 5px var(--gold-primary); }
+}
+
+.btn-hangup {
+    width: 38px; height: 38px; border-radius: 50%; 
+    background: rgba(20, 20, 20, 0.4); backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 59, 48, 0.3); color: #ff3b30; 
+    display: flex; justify-content: center; align-items: center; font-size: 16px; cursor: pointer;
+}
+
+/* 聊天区 */
+.video-chat-area {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+    mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+}
+.v-msg { max-width: 88%; position: relative; animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 优化后的长旁白样式 */
+.v-narration {
+    align-self: center; 
+    font-size: 11px; /* 字体稍微大一丢丢，方便阅读 */
+    color: #999; 
+    margin: 12px 0; /* 增加上下间距 */
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    letter-spacing: 0.5px;
+    width: 100%; /* 占满宽度 */
+    justify-content: center; /* 居中对齐 */
+}
+
+.v-narration span {
+    background: rgba(0,0,0,0.4); 
+    padding: 4px 12px; /* 增加内边距 */
+    border-radius: 6px; 
+    border: 1px solid rgba(255,255,255,0.08);
+    max-width: 90%; /* 防止文字太宽 */
+    text-align: center; /* 文字居中 */
+    line-height: 1.6; /* 增加行高，多行阅读更舒服 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 左右的装饰线 */
+.v-narration::before, .v-narration::after {
+    content: ''; 
+    display: block; 
+    flex: 1; /* 线条自动填满剩余空间 */
+    height: 1px; 
+    background: linear-gradient(90deg, transparent, #333, transparent);
+    max-width: 30px; /* 线条不要太长 */
+}
+
+/* AI气泡 */
+.v-ai-msg { align-self: flex-start; }
+.v-ai-msg .bubble {
+    background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
+    color: #ccc; padding: 10px 14px; border-radius: 4px 16px 16px 16px; font-size: 13px; line-height: 1.5;
+}
+
+/* 用户气泡 */
+.v-user-msg { align-self: flex-end; }
+.v-user-msg .bubble {
+    background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 175, 55, 0.3); color: var(--gold-primary);
+    padding: 10px 14px; border-radius: 16px 4px 16px 16px; font-size: 13px; line-height: 1.5;
+    text-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+}
+
+/* 底部栏 */
+.video-bottom-bar {
+    padding: 15px 20px 30px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+    display: flex; gap: 12px; align-items: center;
+}
+.video-input-box {
+    flex: 1; height: 42px; border-radius: 21px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); color: #ddd; padding: 0 18px; font-size: 13px; outline: none;
+}
+.circle-btn {
+    width: 42px; height: 42px; border-radius: 50%; border: none;
+    display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px;
+}
+.btn-send { background: var(--gold-primary); color: #1a1a1a; }
+.btn-magic {
+    background: linear-gradient(135deg, #444, #222); border: 1px solid var(--gold-primary); color: var(--gold-primary);
+}
+.btn-magic i { filter: drop-shadow(0 0 2px var(--gold-primary)); }
