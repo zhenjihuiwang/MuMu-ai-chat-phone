@@ -2732,7 +2732,7 @@ async function executeSummon(targetFriend) {
         `;
 
         // --- D. 调用 API ---
-        const response = await fetch(`${apiConfig.url}/chat/completions`, {
+        h(`${apiConfig.url}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiConfig.key}` },
             body: JSON.stringify({
