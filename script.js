@@ -518,10 +518,24 @@ async function triggerAIResponse(isReaction = false) {
     let systemPrompt = `你现在扮演：${friend.name}。设定：${friend.prompt}。
     用户：${friend.userName}。
     
-    ${globalMemory}
+    【当前现实时间】：${timeString}
     
     【核心规则】像真人一样说话，多用分段符号 ### 来控制气泡节奏。
     【表情包】可用关键词：[ ${stickerListText} ]。如果是表情，请单独输出指令：###STICKER_SEND:关键词###
+    
+    【视频通话指令】★重要★
+    如果你想给用户打视频电话（比如用户要求，或者你想见对方），请单独输出指令：
+    ###VIDEO_CALL_INITIATE:想打电话的原因###
+    ❌ 绝对不要使用 [发起视频] 这种你自己编的格式。
+    ✅ 只能输出唯一指令：###VIDEO_CALL_INITIATE:想见你的原因###
+    输出指令后，立刻结束回复，不要加任何标点符号或文字。
+    
+    示例：
+    (正确) ###VIDEO_CALL_INITIATE:想看看你###
+    (错误) 好的，我打给你。
+    (错误) [视频通话]
+
+    ${memoryContext}
     `;
 
     // 4. 准备消息列表 (只保留 System 和最新的 User 指令，因为历史记录已经在 GlobalMemory 里了，节省 token 且更精准)
@@ -692,6 +706,22 @@ function startTypeWriter(avatarUrl) {
 
     // 递归打字函数
     function typeNext() {
+
+                const dumbKeywords = ["我打给你", "接视频", "打个视频", "视频通话", "[发起视频", "邀请你视频"];
+        // 只有当 buffer 里有这些词，且还没有触发过指令时
+        if (dumbKeywords.some(k => aiBuffer.includes(k)) && !aiBuffer.includes("###VIDEO_CALL_INITIATE")) {
+            // 稍微延迟一点点，让文字打出来一部分，显得更自然
+            if (Math.random() > 0.95) { // 增加一点随机性，不要每次都秒触发，防止误判
+                // 强制触发来电
+                isStreamActive = false; // 停止打字
+                if (currentBubbleDOM && currentBubbleDOM.parentElement) {
+                    currentBubbleDOM.parentElement.remove(); // 删掉那句废话气泡
+                }
+                showIncomingCallScreen("我想见你..."); // 强制弹窗
+                return; // 结束打字机
+            }
+        }
+
         // --- 指令拦截区 (红包、表情包等) ---
         if (aiBuffer.startsWith("{{GET}}")) { aiBuffer = aiBuffer.replace("{{GET}}", ""); handleAiAction('{{GET}}'); typeNext(); return; }
         if (aiBuffer.startsWith("{{RETURN}}")) { aiBuffer = aiBuffer.replace("{{RETURN}}", ""); handleAiAction('{{RETURN}}'); typeNext(); return; }
@@ -3275,30 +3305,41 @@ function closeVideoHistoryModal() {
     document.getElementById('modal-video-history').style.display = 'none';
 }
 
-// ==============================================
-//   新增：AI 主动来电处理逻辑
-// ==============================================
-
 /**
- * 显示来电呼叫屏幕
+ * 显示来电呼叫屏幕 (修复版)
  * @param {string} reason - AI 想要打电话的原因
  */
 function showIncomingCallScreen(reason) {
-    const friend = friendsData.find(f => f.id === currentChatId);
-    if (!friend) return;
+    // 1. 尝试获取当前聊天的角色
+    let friend = friendsData.find(f => f.id === currentChatId);
 
-    // 填充来电信息
+    // 2. 【修复点】如果当前没在聊天默认选第一个好友进行测试
+    if (!friend) {
+        if (friendsData.length > 0) {
+            friend = friendsData[0];
+            // 顺便把 currentChatId 设置为这个人，否则接听后会报错
+            currentChatId = friend.id; 
+        } else {
+            alert("你还没有创建任何角色，无法测试来电！");
+            return;
+        }
+    }
+
+    // 3. 填充来电信息
     document.getElementById('caller-avatar').src = friend.avatar;
     document.getElementById('caller-name').innerText = friend.name;
-    document.querySelector('.incoming-call-bg').style.backgroundImage = `url('${friend.avatar}')`;
+    
+    // 背景图逻辑
+    const bgEl = document.querySelector('.incoming-call-bg');
+    if(bgEl) bgEl.style.backgroundImage = `url('${friend.avatar}')`;
+
     // 如果AI没给原因，就用默认的
     document.getElementById('caller-reason').innerText = `“${reason || '想听听你的声音...'}”`;
 
-    // 切换到呼叫屏幕
+    // 4. 切换到呼叫屏幕
     goToScreen('screen-incoming-call');
 
-    // 可以在这里加一个来电铃声 (可选)
-    // const ringtone = new Audio('path/to/ringtone.mp3');
+    // 5. 播放铃声
     playSystemSound('ring', true); // true 表示循环播放
 }
 
