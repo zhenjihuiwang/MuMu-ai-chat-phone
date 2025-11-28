@@ -3339,89 +3339,90 @@ function declineCall() {
         triggerAIResponse(true); // isReaction=true 告诉AI这是对事件的反应
     }, 500);
 }
+
 // ==========================================
-//   🔊 声音系统 (Sound System)
+//   🔊 声音系统 (Sound System) - 纯净自定义版
 // ==========================================
 
-// 1. 声音配置与资源
+// 1. 声音配置：只存音量
 let soundConfig = {
-    notif: 'default',
-    chat: 'default',
-    ring: 'default'
+    volume: 0.5 // 默认 50% 音量
 };
 
-// 存储自定义音频数据的缓存
+// 2. 存储音频数据的缓存 (Base64字符串)
 let customSounds = {
     notif: null,
     chat: null,
     ring: null
 };
 
-// 内置音效链接 (使用免费CDN资源)
-const BUILTIN_SOUNDS = {
-    notif: {
-        default: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3', // 叮
-        soft: 'https://assets.mixkit.co/active_storage/sfx/2344/2344-preview.mp3'    // 水滴
-    },
-    chat: {
-        default: 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3', // 啵
-        typewriter: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3' // 机械点击
-    },
-    ring: {
-        default: 'https://assets.mixkit.co/active_storage/sfx/1362/1362-preview.mp3', // 电子铃
-        classic: 'https://assets.mixkit.co/active_storage/sfx/1361/1361-preview.mp3'  // 旧电话
-    }
-};
-
 let currentRingtoneAudio = null; // 用于控制铃声停止
 
-// 2. 初始化加载声音设置
+// 3. 初始化加载声音设置
 async function loadSoundSettings() {
-    const saved = await localforage.getItem('ai_sound_config');
-    const custom = await localforage.getItem('ai_custom_sounds');
-    
-    if (saved) soundConfig = saved;
-    if (custom) customSounds = custom;
-    
-    // 更新UI状态
-    document.getElementById('sound-select-notif').value = soundConfig.notif;
-    document.getElementById('sound-select-chat').value = soundConfig.chat;
-    document.getElementById('sound-select-ring').value = soundConfig.ring;
-    
-    // 显示自定义文件的状态
-    ['notif', 'chat', 'ring'].forEach(type => {
-        if(soundConfig[type] === 'custom' && customSounds[type]) {
-            document.getElementById(`custom-name-${type}`).style.display = 'block';
-        }
-    });
-}
-// 在 window.onload 中调用
-// 请注意：你需要把 loadSoundSettings() 添加到 window.onload 函数里去 (见下文)
-
-// 3. 预览/播放声音
-function playSystemSound(type, isLoop = false) {
-    let src = '';
-    const key = soundConfig[type];
-
-    if (key === 'custom') {
-        if (customSounds[type]) src = customSounds[type];
-        else return; // 选了自定义但没文件，不播放
-    } else {
-        src = BUILTIN_SOUNDS[type][key];
+    // 读取音量设置
+    const savedConfig = await localforage.getItem('ai_sound_config_v2');
+    if (savedConfig && savedConfig.volume !== undefined) {
+        soundConfig.volume = savedConfig.volume;
     }
 
-    if (!src) return;
+    // 读取音频文件
+    const custom = await localforage.getItem('ai_custom_sounds');
+    if (custom) customSounds = custom;
+    
+    // 更新音量滑块UI
+    const slider = document.getElementById('global-volume-slider');
+    const label = document.getElementById('vol-display-text');
+    if (slider && label) {
+        slider.value = soundConfig.volume;
+        label.innerText = Math.floor(soundConfig.volume * 100) + "%";
+    }
 
+    // 更新上传状态UI
+    updateSoundStatusUI('notif');
+    updateSoundStatusUI('chat');
+    updateSoundStatusUI('ring');
+}
+
+// 辅助：更新文字显示 (已设置 / 未设置)
+function updateSoundStatusUI(type) {
+    const el = document.getElementById(`status-text-${type}`);
+    if (!el) return;
+    
+    if (customSounds[type]) {
+        el.innerText = "✅ 已设置自定义音频";
+        el.style.color = "#4facfe";
+        el.style.fontWeight = "bold";
+    } else {
+        el.innerText = "(未设置，静音)";
+        el.style.color = "#ccc";
+        el.style.fontWeight = "normal";
+    }
+}
+
+// 4. 播放声音的核心函数
+function playSystemSound(type, isLoop = false) {
+    // 如果没有上传过这个类型的声音，直接退出，保持静音
+    if (!customSounds[type]) {
+        console.log(`[Sound] No custom sound for ${type}, keeping silent.`);
+        return;
+    }
+
+    const src = customSounds[type];
     const audio = new Audio(src);
+    
+    // 应用全局音量
+    audio.volume = soundConfig.volume; 
     audio.loop = isLoop;
-    audio.volume = 0.8;
-    audio.play().catch(e => console.log("播放失败(需用户交互):", e));
+    
+    // 播放
+    audio.play().catch(e => console.log("播放被浏览器拦截(需用户交互):", e));
 
-    if (isLoop) currentRingtoneAudio = audio; // 保存引用以便停止
+    if (isLoop) currentRingtoneAudio = audio; // 保存引用以便停止铃声
     return audio;
 }
 
-// 4. 停止铃声
+// 5. 停止铃声
 function stopRingtone() {
     if (currentRingtoneAudio) {
         currentRingtoneAudio.pause();
@@ -3430,52 +3431,67 @@ function stopRingtone() {
     }
 }
 
-// 5. 设置页面的交互逻辑
-function previewSound(type) {
-    const select = document.getElementById(`sound-select-${type}`);
-    const val = select.value;
-    
-    if (val === 'custom') {
-        // 触发文件上传
-        document.getElementById(`file-${type}`).click();
-    } else {
-        // 临时播放选中的内置声音
-        const tempAudio = new Audio(BUILTIN_SOUNDS[type][val]);
-        tempAudio.play();
-        soundConfig[type] = val; // 暂存选择
-    }
+// 6. UI交互：点击上传按钮
+function triggerSoundUpload(type) {
+    document.getElementById(`file-${type}`).click();
 }
 
+// 7. 处理文件选择
 function handleSoundUpload(type, input) {
     const file = input.files[0];
-    if (!file) {
-        // 如果用户取消选择，恢复到 default
-        document.getElementById(`sound-select-${type}`).value = 'default';
+    if (!file) return;
+    
+    // 限制大小 (比如 2MB)，防止浏览器存储爆炸
+    if (file.size > 2 * 1024 * 1024) {
+        alert("音频文件太大了！请上传 2MB 以内的 MP3/WAV 文件。");
         return;
     }
-    
-    // 转为 Base64 存入 DB
+
     const reader = new FileReader();
     reader.onload = (e) => {
         const base64 = e.target.result;
         customSounds[type] = base64; // 更新内存
-        soundConfig[type] = 'custom'; // 更新配置
         
-        document.getElementById(`custom-name-${type}`).innerText = `已加载: ${file.name}`;
-        document.getElementById(`custom-name-${type}`).style.display = 'block';
+        // 自动保存
+        saveAllSounds();
         
-        // 播放一下确认
-        const audio = new Audio(base64);
-        audio.play();
+        // 更新UI
+        updateSoundStatusUI(type);
+        
+        // 立即播放一下，让用户确认声音和音量
+        playSystemSound(type);
     };
     reader.readAsDataURL(file);
 }
 
-function saveSoundSettings() {
-    localforage.setItem('ai_sound_config', soundConfig);
+// 8. 实时更新音量预览 (拖动滑块时)
+function updateVolumePreview(val) {
+    soundConfig.volume = parseFloat(val);
+    document.getElementById('vol-display-text').innerText = Math.floor(soundConfig.volume * 100) + "%";
+}
+
+// 9. 保存音量设置 (松开滑块时)
+function saveVolumeSetting() {
+    localforage.setItem('ai_sound_config_v2', soundConfig);
+    // 播放一个声音试听音量 (如果有通知音就播通知音，没有就算了)
+    playSystemSound('notif');
+}
+
+// 10. 保存所有声音数据到数据库
+function saveAllSounds() {
     localforage.setItem('ai_custom_sounds', customSounds);
-    alert("声音设置已保存！");
-    goToScreen('screen-settings-menu');
+}
+
+// 11. 清空所有声音
+function clearAllSounds() {
+    if(confirm("确定要删除所有自定义声音并恢复静音吗？")) {
+        customSounds = { notif: null, chat: null, ring: null };
+        saveAllSounds();
+        updateSoundStatusUI('notif');
+        updateSoundStatusUI('chat');
+        updateSoundStatusUI('ring');
+        alert("已清空。");
+    }
 }
 
 // ==========================================

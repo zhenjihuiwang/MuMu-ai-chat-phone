@@ -86,45 +86,63 @@
     </div>
     <div class="content padding scrollable">
         
+        <!-- 0. 全局音量调节 -->
+        <div class="setting-section" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <h4>🔊 系统音量</h4>
+                <span id="vol-display-text" style="color:#4facfe; font-weight:bold;">50%</span>
+            </div>
+            <!-- 音量滑块 -->
+            <input type="range" id="global-volume-slider" min="0" max="1" step="0.1" value="0.5" style="width:100%;" oninput="updateVolumePreview(this.value)" onchange="saveVolumeSetting()">
+        </div>
+
+        <p style="font-size:12px; color:#999; margin-bottom:15px; text-align:center;">
+            * 系统不再提供默认声音，请手动上传音频文件 *
+        </p>
+
         <!-- 1. 通知提示音 -->
-        <div class="setting-section">
-            <h4>🔔 通知提示音</h4>
-            <select id="sound-select-notif" onchange="previewSound('notif')">
-                <option value="default">默认：清脆叮咚</option>
-                <option value="soft">柔和：水滴声</option>
-                <option value="custom">📂 自定义上传...</option>
-            </select>
-            <!-- 隐藏的上传控件 -->
+        <div class="setting-section sound-upload-card">
+            <div class="sound-info">
+                <h4>🔔 通知提示音</h4>
+                <p id="status-text-notif" style="font-size:12px; color:#ccc;">(未设置，静音)</p>
+            </div>
+            <button class="small-btn upload-btn" onclick="triggerSoundUpload('notif')">
+                <i class="fas fa-upload"></i> 上传
+            </button>
             <input type="file" id="file-notif" accept="audio/*" style="display:none" onchange="handleSoundUpload('notif', this)">
-            <p id="custom-name-notif" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
         </div>
 
         <!-- 2. 聊天气泡音 -->
-        <div class="setting-section">
-            <h4>💬 聊天气泡音</h4>
-            <select id="sound-select-chat" onchange="previewSound('chat')">
-                <option value="default">默认：气泡波</option>
-                <option value="typewriter">机械：打字机</option>
-                <option value="custom">📂 自定义上传...</option>
-            </select>
+        <div class="setting-section sound-upload-card">
+            <div class="sound-info">
+                <h4>💬 聊天气泡音</h4>
+                <p id="status-text-chat" style="font-size:12px; color:#ccc;">(未设置，静音)</p>
+            </div>
+            <button class="small-btn upload-btn" onclick="triggerSoundUpload('chat')">
+                <i class="fas fa-upload"></i> 上传
+            </button>
             <input type="file" id="file-chat" accept="audio/*" style="display:none" onchange="handleSoundUpload('chat', this)">
-            <p id="custom-name-chat" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
         </div>
 
         <!-- 3. 来电铃声 -->
-        <div class="setting-section">
-            <h4>📞 视频/电话铃声</h4>
-            <select id="sound-select-ring" onchange="previewSound('ring')">
-                <option value="default">默认：电子铃声</option>
-                <option value="classic">复古：旧电话</option>
-                <option value="custom">📂 自定义上传...</option>
-            </select>
+        <div class="setting-section sound-upload-card">
+            <div class="sound-info">
+                <h4>📞 视频/电话铃声</h4>
+                <p id="status-text-ring" style="font-size:12px; color:#ccc;">(未设置，静音)</p>
+            </div>
+            <button class="small-btn upload-btn" onclick="triggerSoundUpload('ring')">
+                <i class="fas fa-upload"></i> 上传
+            </button>
             <input type="file" id="file-ring" accept="audio/*" style="display:none" onchange="handleSoundUpload('ring', this)">
-            <p id="custom-name-ring" style="font-size:12px; color:#999; display:none;">已使用自定义音频</p>
         </div>
 
-        <hr>
-        <button class="primary-btn" onclick="saveSoundSettings()">💾 保存声音设置</button>
+        <hr style="margin-top:20px; border:0; border-top:1px solid #eee;">
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="primary-btn" style="background-color: #ff4757; width: auto; padding: 10px 30px;" onclick="clearAllSounds()">
+                <i class="fas fa-trash"></i> 清空所有声音
+            </button>
+        </div>
     </div>
 </div>
 
